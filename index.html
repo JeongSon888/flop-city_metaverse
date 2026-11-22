@@ -97,7 +97,7 @@ input.txt{flex:1;min-width:0;font:400 .95rem var(--body);border:1px solid var(--
 .view{position:relative;width:100%;aspect-ratio:16/10;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--sky);touch-action:none;max-width:100%}
 .view canvas{display:block;width:100%;height:100%}
 .view>canvas:not(.minimap){filter:saturate(1.3) contrast(1.14) brightness(1.02)}
-.tag{position:absolute;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap}
+.tag{position:absolute;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap;will-change:transform;backface-visibility:hidden}
 .tag.place{font:700 .86rem var(--display);padding:4px 10px;border-radius:8px;background:var(--c);border:2px solid #fff;color:#fff;letter-spacing:.02em;box-shadow:0 3px 10px #0004;text-shadow:0 1px 2px #0005}
 .tag.who{font:600 .68rem var(--body);color:var(--fg);text-shadow:0 0 3px var(--panel),0 0 3px var(--panel)}
 .tag.say{font:500 .74rem var(--body);max-width:180px;white-space:normal;line-height:1.3;padding:5px 8px;border-radius:9px;background:var(--panel);border:1.5px solid var(--c);color:var(--fg);box-shadow:0 2px 8px #0003}
@@ -282,7 +282,7 @@ body.citymode .cpanel #me5 .bar{flex-wrap:wrap}
     {id:2,name:"Load Balancer",diff:"Medium",rules:"Split 9 jobs across 3 GPUs so each GPU carries exactly 15 units. Tap a job, then tap a GPU. Tap a number inside a GPU to send it back."},
     {id:3,name:"Read the AI",diff:"Tricky",rules:"The AI thinks of a tech word and gives you a clue. Every wrong guess earns a new clue. You have 5 guesses."},
     {id:4,name:"Firmware Crack",diff:"Hard",rules:"Crack a 4-digit code, each digit 1 to 6 (repeats allowed). ● means right digit, right spot. ○ means right digit, wrong spot. You have 8 tries."},
-    {id:5,name:"AI City",diff:"Brutal",boss:true,rules:"A town built on the FLOP story. Pick a role (agent, miner or validator), join with your FLOP wallet address, and walk around with other players. AI agents grab free FLOP at the Faucet Mart, buy compute at the Gateway, miners calibrate their GPUs and serve the jobs, and a validator settles every session on chain. On every tick one resident thinks with the AI. Drop some news and watch the town react. Drag to rotate, scroll or pinch to zoom."}
+    {id:5,name:"AI City",diff:"Brutal",boss:true,rules:"A town built on the FLOP story. Pick a role (agent, miner or validator), join with your FLOP wallet address, and walk around with other players. AI agents grab free FLOP at the Faucet Mart, buy compute at the Gateway, miners calibrate their GPUs and serve the jobs, and a validator settles every session on chain. On every tick one resident thinks with the AI. Drag to rotate, scroll or pinch to zoom."}
   ];
   const FLOOR_LOOK=[{i:"🧩",c:"#15925a"},{i:"⚖️",c:"#3d5afe"},{i:"💬",c:"#7c4dff"},{i:"🔐",c:"#cc3b3b"},{i:"🏙️",c:"#c4682b"}];
   let stars=store.get("tw-stars",{}), current=1, cleanup=null, sample=null;
@@ -514,7 +514,7 @@ const FLOPCHAIN=(()=>{
 
   // ---------- Floor 5: 3D AI City ----------
   function L5(f){
-    const game=stageHead(f,"");
+    const game=stageHead(f,"");let alive=true;
     game.innerHTML=`<div class="ctop" id="ctop"><button class="cbtn" id="back5" type="button" title="Back to the tower">←</button><b class="ctitle">FLOP <span>AI City</span></b>
         <div class="cmid"><button class="btn" id="play5">▶ Start</button><button class="btn ghost" id="speed5">Tick: 12s</button><span class="note" id="clock5"></span></div>
         <button class="cbtn tog" id="togL" type="button" aria-pressed="true">👤 <span>You</span></button><button class="cbtn tog" id="togR" type="button" aria-pressed="true">🏆 <span>Board</span></button></div>
@@ -551,7 +551,6 @@ const FLOPCHAIN=(()=>{
         <p class="note" id="lbnote">Live devnet balances (free + reserved) of every registered resident, refreshed every minute.</p></div>
       <div class="stats" id="net5"></div>
       <div class="agents" id="agents" style="margin-top:8px"></div>
-      <form class="bar" id="news5" style="margin-top:10px"><input class="txt" id="newsIn" maxlength="120" autocomplete="off" placeholder="Drop news, e.g. Testnet launches tomorrow!"><button class="btn ghost">Drop news</button></form>
       <div class="tlog" id="tlog" style="margin-top:10px"></div>
       <p class="note" id="calls5"></p>
       <div class="notice" id="noai5" hidden>On this website the AI agents follow built-in rules. Later they can think with AI served by FLOP miners.</div>
@@ -671,9 +670,34 @@ const FLOPCHAIN=(()=>{
     const water=rbox(30,0.08,4.5,2.2,new THREE.MeshStandardMaterial({color:0x4fa6f0,roughness:.05,metalness:.6,envMap:envCube,envMapIntensity:1.3}));water.castShadow=false;water.visible=false;add(water,0,0.02,-31);
     const edge=rbox(31,0.25,5.5,2.6,M.white);edge.castShadow=false;edge.visible=false;add(edge,0,0,-31);water.position.y=0.06;
     // trees: smooth modern canopies
-    const leafM=[0x2f8a3e,0x24763a,0x3f9a45].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.75}));
-    const trees=[];const tree=(x,z,s)=>{const t=new THREE.Group();trees.push(t);const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,1.1,8),M.white);tr.position.y=0.55;t.add(tr);
-      const c=new THREE.Mesh(new THREE.SphereGeometry(0.75,18,14),leafM[Math.floor(rnd()*3)]);c.position.y=1.5;c.scale.set(1,1.15,1);t.add(c);t.traverse(o=>{if(o.isMesh)o.castShadow=true;});t.scale.setScalar(s);t.position.set(x,0,z);scene.add(t);return t;};
+    const leafM=[0x14481c,0x1b5222,0x245e26].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.85}));
+    // trees: lumpy low-poly canopies (several jittered blobs), brown trunks, and some conifers
+    const barkM=new THREE.MeshStandardMaterial({color:0x3a2416,roughness:.9});
+    // canopy blobs: smooth, gently lumpy spheres, darker underneath and sunlit on top (vertex colours)
+    const leafVC=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85});
+    function blob(hex,seed){const g=new THREE.SphereGeometry(1,20,14);const ps=g.attributes.position;const base=new THREE.Color(hex);const cols=[];const c=new THREE.Color();
+      for(let i=0;i<ps.count;i++){const x=ps.getX(i),y=ps.getY(i),z=ps.getZ(i);
+        const n=1+0.09*Math.sin(x*3.1+seed)+0.08*Math.sin(y*3.7+seed*2)+0.07*Math.sin(z*4.3+seed*3)+0.05*Math.sin((x+z)*6.0+seed);
+        ps.setXYZ(i,x*n,y*n*0.92,z*n);const sh=0.55+0.6*Math.min(1,Math.max(0,(y+1)/2));c.copy(base).multiplyScalar(sh);
+        if(Math.sin(x*9+y*7+z*8+seed)>0.6)c.multiplyScalar(1.12);cols.push(c.r,c.g,c.b);}
+      g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3));g.computeVertexNormals();return g;}
+    const blobGeos=[[0x1f5a22,1],[0x2a6a26,2],[0x356f24,3],[0x1a4f24,4],[0x3d7a2a,5],[0x24602a,6]].map(([h,sd])=>blob(h,sd));
+    const pineVC=[0x123e22,0x18482a].map((hex,k)=>{const g=new THREE.ConeGeometry(1,1,12,4);const ps=g.attributes.position;const base=new THREE.Color(hex);const cols=[];const c=new THREE.Color();
+      for(let i=0;i<ps.count;i++){const y=ps.getY(i);c.copy(base).multiplyScalar(0.6+0.7*(y+0.5));cols.push(c.r,c.g,c.b);}g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3));return g;});
+    const trunkGeo=new THREE.CylinderGeometry(0.07,0.14,1.5,8);trunkGeo.translate(0,0.75,0);const branchGeo=new THREE.CylinderGeometry(0.03,0.055,0.8,6);branchGeo.translate(0,0.4,0);
+    const trees=[];const tree=(x,z,s)=>{const t=new THREE.Group();trees.push(t);
+      if(rnd()<0.25){ // conifer: drooping tiers
+        const tr=new THREE.Mesh(trunkGeo,barkM);tr.scale.set(0.9,0.6,0.9);t.add(tr);const g=pineVC[Math.floor(rnd()*2)];
+        [[0.95,1.0,1.15],[1.55,0.8,0.95],[2.05,0.6,0.8],[2.45,0.38,0.6]].forEach(([y,r,h])=>{const c=new THREE.Mesh(g,leafVC);c.scale.set(r,h,r);c.position.y=y;c.rotation.y=rnd()*3;t.add(c);});
+        t.scale.set(s,s*(1+rnd()*0.3),s);
+      }else{ // broadleaf: one big crown plus smaller lobes around it
+        const tr=new THREE.Mesh(trunkGeo,barkM);t.add(tr);[-1,1].forEach(k=>{const br=new THREE.Mesh(branchGeo,barkM);br.position.y=1.1;br.rotation.z=k*0.55;br.rotation.y=rnd()*3;t.add(br);});
+        const g0=Math.floor(rnd()*6);const main=new THREE.Mesh(blobGeos[g0],leafVC);main.scale.set(0.9,0.8,0.9);main.position.y=2.0;main.rotation.y=rnd()*6;t.add(main);
+        const n=3+Math.floor(rnd()*3);for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rnd()*0.8;const r=0.48+rnd()*0.18;
+          const lobe=new THREE.Mesh(blobGeos[(g0+i+1)%6],leafVC);lobe.scale.setScalar(r);lobe.position.set(Math.cos(a)*0.62,1.65+rnd()*0.5,Math.sin(a)*0.62);lobe.rotation.y=rnd()*6;t.add(lobe);}
+        const top=new THREE.Mesh(blobGeos[(g0+3)%6],leafVC);top.scale.setScalar(0.5);top.position.set((rnd()-.5)*0.3,2.6,(rnd()-.5)*0.3);t.add(top);
+        t.scale.setScalar(s*(0.9+rnd()*0.25));}
+      t.rotation.y=rnd()*Math.PI*2;t.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});t.position.set(x,0,z);scene.add(t);return t;};
     [[-45,-36],[45,-36],[-40,30],[40,30]].forEach(([cx,cz])=>{for(let k=0;k<8;k++)tree(cx+(rnd()-.5)*10,cz+(rnd()-.5)*6,0.9+rnd()*0.7);});
     for(let k=-13;k<=13;k+=4.3){tree(k,-35.5,0.9);}
     // buildings
@@ -802,15 +826,15 @@ const FLOPCHAIN=(()=>{
     const lampHead=new THREE.MeshStandardMaterial({color:0xfff4d6,emissive:0xffd58a,emissiveIntensity:.1,roughness:.3});
     const lampPost=new THREE.CylinderGeometry(0.05,0.07,2.6,8),lampTop=new THREE.SphereGeometry(0.17,12,8);
     const lamp=(x,z)=>{const pst=new THREE.Mesh(lampPost,M.steel);pst.position.set(x,1.3,z);pst.castShadow=true;scene.add(pst);const hd=new THREE.Mesh(lampTop,lampHead);hd.position.set(x,2.65,z);scene.add(hd);};
-    for(let k=0;k<12;k++){const a=(k+0.5)/12*Math.PI*2;lamp(Math.cos(a)*13.3,Math.sin(a)*13.3);}
+    for(let k=0;k<8;k++){const a=k/8*Math.PI*2+Math.PI/4;lamp(Math.cos(a)*13.4,Math.sin(a)*13.4);}
     lampSpots.forEach(([x,z])=>lamp(x,z));
     // benches and planters around the plaza
     const benchM=new THREE.MeshStandardMaterial({color:0xc08a5a,roughness:.7});
-    for(let k=0;k<10;k++){const a=k/10*Math.PI*2+0.31;const bg=new THREE.Group();bg.position.set(Math.cos(a)*10,0,Math.sin(a)*10);bg.rotation.y=-a+Math.PI/2;scene.add(bg);
+    for(let k=0;k<8;k++){const a=k/8*Math.PI*2+Math.PI/8;const bg=new THREE.Group();bg.position.set(Math.cos(a)*11.3,0,Math.sin(a)*11.3);bg.rotation.y=-a+Math.PI/2;scene.add(bg);
       const b=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.12,0.55),benchM);b.position.y=0.45;b.castShadow=true;bg.add(b);const back=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.45,0.08),benchM);back.position.set(0,0.75,0.26);back.castShadow=true;bg.add(back);
       [-0.9,0.9].forEach(dx=>{const l=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.42,0.46),M.steel);l.position.set(dx,0.21,0);bg.add(l);});
-      const a2=a+Math.PI/10;const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.45,0.55,16),M.white);pl.position.set(Math.cos(a2)*10.4,0.27,Math.sin(a2)*10.4);pl.castShadow=true;scene.add(pl);
-      const bush=new THREE.Mesh(new THREE.SphereGeometry(0.55,14,10),leafM[k%3]);bush.position.set(Math.cos(a2)*10.4,0.8,Math.sin(a2)*10.4);bush.scale.y=0.85;bush.castShadow=true;scene.add(bush);}
+      const a2=a+Math.PI/8;const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.45,0.55,16),M.white);pl.position.set(Math.cos(a2)*12.3,0.27,Math.sin(a2)*12.3);pl.castShadow=true;scene.add(pl);
+      const bush=new THREE.Mesh(new THREE.SphereGeometry(0.55,14,10),leafM[k%3]);bush.position.set(Math.cos(a2)*12.3,0.8,Math.sin(a2)*12.3);bush.scale.y=0.85;bush.castShadow=true;scene.add(bush);}
     {const tg=document.createElement("div");tg.className="tag place";tg.style.setProperty("--c","#b07a2e");tg.textContent="🏛️ Town Square";tags.appendChild(tg);const anc=new THREE.Vector3(0,0.6,12.2);anim.push(()=>place(tg,anc,0));}
     // distant skyline so the town doesn't float in an empty plane
     const skyGeo=new THREE.BoxGeometry(1,1,1);skyGeo.translate(0,0.5,0);
@@ -939,8 +963,7 @@ const FLOPCHAIN=(()=>{
       if(d>0.06){walking=true;const st=Math.min(d,speed);g.position.x+=dx/d*st;g.position.z+=dz/d*st;const want=Math.atan2(dx,dz);let dr=want-g.rotation.y;dr=Math.atan2(Math.sin(dr),Math.cos(dr));g.rotation.y+=dr*0.25;}
       const L=p.limbs,sw=walking?Math.sin(now/105)*0.75:0;L.la.rotation.x+=(sw-L.la.rotation.x)*0.3;L.ra.rotation.x+=(-sw-L.ra.rotation.x)*0.3;L.ll.rotation.x+=(-sw-L.ll.rotation.x)*0.3;L.rl.rotation.x+=(sw-L.rl.rotation.x)*0.3;
       g.position.y=walking?Math.abs(Math.sin(now/105))*0.06:0;p.shadow.position.x=g.position.x;p.shadow.position.z=g.position.z;
-      place(p.nameTag,g.position,3.0);if(p.line&&now-p.lineT<9000){p.sayTag.hidden=false;sayAbove(p.sayTag,p.nameTag);}
-      const mk=g.userData.marker;if(mk){mk.rotation.y=now*0.003;mk.position.y=2.62+Math.sin(now*0.004)*0.08;}else p.sayTag.hidden=true;}
+      const mk=g.userData.marker;if(mk){mk.rotation.y=now*0.003;mk.position.y=2.62+Math.sin(now*0.004)*0.08;}}
     let me=null,follow=true,lastAct=Date.now(),focusAt=null,focusUntil=0;const remotes=new Map();let room=null,db=null,userCap=null,unsubs=[];const keys={};
     const clampX=x=>Math.max(-50,Math.min(50,x)),clampZ=z=>Math.max(-50,Math.min(50,z));
     const camTarget=new THREE.Vector3(0,0,0);
@@ -997,7 +1020,9 @@ const FLOPCHAIN=(()=>{
       remotes.forEach(r=>stepPerson(r,now,0.13));
       if(focusAt&&now<focusUntil){camTarget.lerp(focusAt,0.15);dist+=(20-dist)*0.12;}
       else if(me&&follow){camTarget.lerp(new THREE.Vector3(me.g.position.x,0,me.g.position.z),0.08);}else camTarget.lerp(new THREE.Vector3(0,0,0),0.05);
-      camera.position.set(camTarget.x+Math.sin(az)*Math.cos(el)*dist,Math.sin(el)*dist,camTarget.z+Math.cos(az)*Math.cos(el)*dist);camera.lookAt(camTarget);
+      camera.position.set(camTarget.x+Math.sin(az)*Math.cos(el)*dist,Math.sin(el)*dist,camTarget.z+Math.cos(az)*Math.cos(el)*dist);camera.lookAt(camTarget);camera.updateMatrixWorld();
+      // labels are placed only after the camera has moved this frame, so they stay glued to the 3D scene
+      [me,...remotes.values()].forEach(p=>{if(!p)return;place(p.nameTag,p.g.position,3.0);if(p.line&&now-p.lineT<9000){p.sayTag.hidden=false;sayAbove(p.sayTag,p.nameTag);}else p.sayTag.hidden=true;});
       anim.forEach(fn=>fn(now));
       AG.forEach(a=>{const g=a.g,L=a.limbs;let walking=false;
         if(!a.path.length&&now>a.nextIdle){a.path.push({x:a.base.x+(Math.random()-.5)*2.4,z:a.base.z+(Math.random()-.5)*1.6});a.nextIdle=now+2500+Math.random()*4000;}
@@ -1099,14 +1124,14 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
     function stop(){running=false;clearInterval(timer);timer=null;$("play5").textContent="▶ Resume";}
     $("play5").onclick=()=>running?stop():start();
     $("speed5").onclick=()=>{tickMs=tickMs===12000?25000:tickMs===25000?6000:12000;$("speed5").textContent=`Tick: ${tickMs/1000}s`;if(running){clearInterval(timer);timer=setInterval(tick,tickMs);}};
-    $("news5").onsubmit=e=>{e.preventDefault();const t=WORDS_BAD.clean($("newsIn").value.trim());if(!t)return;$("newsIn").value="";events.push("BREAKING NEWS: "+t);log("Breaking news: "+t,true);};
+    
     const vis=()=>{if(document.hidden&&running)stop();};document.addEventListener("visibilitychange",vis);
     log("Welcome to AI City. Agents claim free FLOP at the Faucet Mart and buy compute at the Gateway. Miners calibrate, then serve the jobs. The validator settles them on chain. Press Start.",true);drawAgents();frame();
     // ---------- joining and multiplayer ----------
     let lastSync=0,lastSent="";
     function syncMe(now){if(!room||!me||now-lastSync<200)return;lastSync=now;const g=me.g.position;
       const st={addr:me.addr,nick:me.nick,role:me.role,x:+g.x.toFixed(2),z:+g.z.toFixed(2),say:me.line,sayT:me.lineT};const key=JSON.stringify(st);if(key===lastSent)return;lastSent=key;room.presence(st).catch(()=>{});}
-    function online(){const n=remotes.size+(me?1:0);$("hudOnline").textContent=room?`● ${n} online`:"● solo";$("online5").textContent=room?`${n} player${n===1?"":"s"} in the city right now${regCount?` · ${regCount} resident${regCount===1?"":"s"} registered`:""}.`:"Multiplayer is off (no Supabase settings in config.js). You can still walk around on your own.";}
+    function online(){if(!alive)return;const n=remotes.size+(me?1:0);$("hudOnline").textContent=room?`● ${n} online`:"● solo";$("online5").textContent=room?`${n} player${n===1?"":"s"} in the city right now${regCount?` · ${regCount} resident${regCount===1?"":"s"} registered`:""}.`:"Multiplayer is off (no Supabase settings in config.js). You can still walk around on your own.";}
     let regCount=0;
     function spawn(addr,nick,role,mine){
       role=cleanRole(role);const col=colorFromAddr(addr);const seed=SS58.blake2b(new TextEncoder().encode(addr),1)[0];
@@ -1117,7 +1142,7 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
     function economy(){}
     function avatar(r,size){const d=document.createElement("span");d.className="av";d.style.setProperty("--ac",colorFromAddr(r.addr));d.style.width=d.style.height=size+"px";
       d.textContent=(r.nick||r.addr.slice(1)).trim().charAt(0).toUpperCase()||"?";if(r.role&&ROLES[r.role]){const rb=document.createElement("i");rb.textContent=ROLES[r.role].icon;d.appendChild(rb);}return d;}
-    function renderBoard(rows){
+    function renderBoard(rows){if(!alive)return;
       const ol=$("lb5");ol.innerHTML="";let pod=$("pod5");if(!pod){pod=document.createElement("div");pod.id="pod5";pod.className="podium";ol.before(pod);}pod.innerHTML="";
       if(!rows.length){pod.hidden=true;const li=document.createElement("li");li.className="note";li.textContent="No residents yet. Join with your address to be first.";ol.appendChild(li);return;}
       pod.hidden=false;
@@ -1165,8 +1190,8 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
           rows=(res.data||[]).filter(r=>SS58.check(r.addr).ok).map(r=>({addr:String(r.addr),nick:WORDS_BAD.clean(String(r.nick||"").replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16)),role:ROLES[r.role]?r.role:""}));}
         if(me&&!rows.some(r=>r.addr===me.addr))rows.push({addr:me.addr,nick:me.nick||"",role:me.role});
         regCount=rows.length;online();
-        let bal={};try{bal=await FLOPCHAIN.balances(RPC,rows.map(r=>r.addr));$("lbnote").textContent="Live devnet balances (free + reserved) of every registered resident, refreshed every minute.";}
-        catch(e){$("lbnote").textContent="The FLOP devnet RPC didn't answer just now. Balances will refresh in a minute.";}
+        let bal={};try{bal=await FLOPCHAIN.balances(RPC,rows.map(r=>r.addr));if(!alive)return;$("lbnote").textContent="Live devnet balances (free + reserved) of every registered resident, refreshed every minute.";}
+        catch(e){if(!alive)return;$("lbnote").textContent="The FLOP devnet RPC didn't answer just now. Balances will refresh in a minute.";}
         rows.forEach(r=>r.flop=bal[r.addr]==null?null:bal[r.addr]);
         rows.sort((a,b)=>(b.flop??-1)-(a.flop??-1));renderBoard(rows.slice(0,10));
         topRank.clear();rows.filter(r=>r.flop!=null).slice(0,10).forEach((r,i)=>topRank.set(r.addr,i+1));applyCrowns();
@@ -1269,22 +1294,31 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
     const tier2=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.3,0.3,48),navyM);tier2.position.set(hq.x,0.47,hq.z);tier2.castShadow=tier2.receiveShadow=true;scene.add(tier2);
     const rim=new THREE.Mesh(new THREE.TorusGeometry(2.22,0.05,8,64),goldM);rim.rotation.x=Math.PI/2;rim.position.set(hq.x,HQY,hq.z);scene.add(rim);
     const rimGlow=new THREE.Mesh(new THREE.TorusGeometry(3.0,0.05,8,64),glow(0xffb070));rimGlow.rotation.x=Math.PI/2;rimGlow.position.set(hq.x,0.33,hq.z);scene.add(rimGlow);
-    const carpetG=new THREE.Group();carpetG.position.set(hq.x,0,hq.z);carpetG.rotation.y=hqDir;scene.add(carpetG);
+    { // fountain: a ring of water around the CEO's podium, with small jets arcing in
+      const stoneM=new THREE.MeshStandardMaterial({color:0xcdbb9c,roughness:.7}),waterM=new THREE.MeshStandardMaterial({color:0x0b4f9e,roughness:.05,metalness:.55,envMap:envCube,envMapIntensity:1.4,transparent:true,opacity:.92});
+      const outer=new THREE.Mesh(new THREE.CylinderGeometry(5.9,6.0,0.5,72,1,true),stoneM);outer.position.set(hq.x,0.25,hq.z);outer.castShadow=outer.receiveShadow=true;scene.add(outer);
+      const rimO=new THREE.Mesh(new THREE.TorusGeometry(5.95,0.16,10,96),stoneM);rimO.rotation.x=Math.PI/2;rimO.position.set(hq.x,0.5,hq.z);rimO.castShadow=true;scene.add(rimO);
+      const floor=new THREE.Mesh(new THREE.RingGeometry(3.0,5.9,72),new THREE.MeshStandardMaterial({color:0x1d4f7a,roughness:.6}));floor.rotation.x=-Math.PI/2;floor.position.set(hq.x,0.06,hq.z);scene.add(floor);
+      const water=new THREE.Mesh(new THREE.RingGeometry(3.05,5.9,72),waterM);water.rotation.x=-Math.PI/2;water.position.set(hq.x,0.36,hq.z);scene.add(water);
+      const dropM=new THREE.MeshStandardMaterial({color:0xcfeaff,emissive:0x7fc6ff,emissiveIntensity:.35,transparent:true,opacity:.85});const dropG=new THREE.SphereGeometry(0.075,8,6);
+      const jets=[];for(let k=0;k<12;k++){const a=k/12*Math.PI*2;for(let d=0;d<5;d++){const m=new THREE.Mesh(dropG,dropM);scene.add(m);jets.push({m,a,o:d/5});}}
+      anim.push(t=>jets.forEach(j=>{const u=((t*0.0007)+j.o)%1;const r=5.7-u*2.2;j.m.position.set(hq.x+Math.cos(j.a)*r,0.4+Math.sin(u*Math.PI)*1.25,hq.z+Math.sin(j.a)*r);}));}
+    const carpetG=new THREE.Group();carpetG.position.set(hq.x,0,hq.z);carpetG.rotation.y=hqDir;carpetG.visible=false;scene.add(carpetG);
     const redM=new THREE.MeshStandardMaterial({color:0xb3202f,roughness:.85});
     [[0.06,3.6,4.6],[0.2,2.9,3.35],[0.34,2.2,2.6]].forEach(([y,zz,w])=>{const st=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.14,0.55),redM);st.position.set(0,y,zz-0.1);st.receiveShadow=true;carpetG.add(st);});
     const run=new THREE.Mesh(new THREE.PlaneGeometry(1.5,5),redM);run.rotation.x=-Math.PI/2;run.position.set(0,0.035,6.3);carpetG.add(run);
     [-1,1].forEach(k=>{[3.9,6,8.1].forEach(zz=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,0.8,10),goldM);post.position.set(k*1.05,0.4,zz);carpetG.add(post);const tp=new THREE.Mesh(new THREE.SphereGeometry(0.08,10,8),goldM);tp.position.set(k*1.05,0.82,zz);carpetG.add(tp);});
       const rope=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,4.2,8),redM);rope.rotation.x=Math.PI/2;rope.position.set(k*1.05,0.68,6);carpetG.add(rope);});
-    const lect=rbox(0.7,1.05,0.5,0.1,new THREE.MeshStandardMaterial({color:0x1f2a44,roughness:.4}));add(lect,hq.x+0.9,0.27+35,hq.z+0.5);
+    const lect=rbox(0.7,1.05,0.5,0.1,new THREE.MeshStandardMaterial({color:0x1f2a44,roughness:.4}));lect.visible=false;add(lect,hq.x+0.9,0.35,hq.z+0.5);
     const hqTex=mkTex(512,160,(g,w,h)=>{g.fillStyle="#0f1424";g.fillRect(0,0,w,h);g.fillStyle="#ffb070";g.font="700 64px sans-serif";g.textBaseline="middle";g.fillText("FLOP LABS",30,62);g.fillStyle="#9fb2ff";g.font="600 28px sans-serif";g.fillText("HQ · CITY RULES",32,122);});
-    const hqSign=new THREE.Mesh(new THREE.PlaneGeometry(4.2,1.3),new THREE.MeshStandardMaterial({map:hqTex,emissive:0xffffff,emissiveMap:hqTex,emissiveIntensity:.4}));hqSign.position.set(hq.x-1.3,3.7,hq.z-2.7);scene.add(hqSign);
-    [-2,2].forEach(k=>{const pst=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,4.4,8),M.steel);pst.position.set(hq.x-1.3+k*1.05,2.2,hq.z-2.75);scene.add(pst);});
+    const hqSign=new THREE.Mesh(new THREE.PlaneGeometry(4.2,1.3),new THREE.MeshStandardMaterial({map:hqTex,emissive:0xffffff,emissiveMap:hqTex,emissiveIntensity:.4}));hqSign.position.set(hq.x-1.3,3.7,hq.z-2.7);hqSign.visible=false;scene.add(hqSign);
+    [].forEach(k=>{const pst=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,4.4,8),M.steel);pst.position.set(hq.x-1.3+k*1.05,2.2,hq.z-2.75);scene.add(pst);});
     const ceo=mkPerson("#d9a441",11,"ceo",{shirt:0x0b1022,skin:0x3a2116,hair:0x050505,pants:0x0b1022});ceo.g.position.set(hq.x,HQY-0.09,hq.z);ceo.g.rotation.y=hqDir;
     ceo.nameTag.classList.remove("player");ceo.nameTag.classList.add("ceo");ceo.nameTag.textContent="Arthur Hayes · CEO (NPC)";ceo.sayTag.classList.add("ceosay");
     ceo.g.scale.setScalar(2.2);
-    const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.6,9,24,1,true),new THREE.MeshBasicMaterial({color:0xffc070,transparent:true,opacity:.05,side:THREE.DoubleSide,depthWrite:false}));beam.position.set(hq.x,4.9,hq.z);scene.add(beam);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.6,9,24,1,true),new THREE.MeshBasicMaterial({color:0xffc070,transparent:true,opacity:.05,side:THREE.DoubleSide,depthWrite:false}));beam.position.set(hq.x,4.9,hq.z);beam.visible=false;scene.add(beam);
     const halo2=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.05,8,40),glow(0xffb070));halo2.rotation.x=Math.PI/2;halo2.position.set(hq.x,HQY+0.02,hq.z);scene.add(halo2);anim.push(t=>{halo2.scale.setScalar(1+Math.sin(t*0.003)*0.08);});
-    $("sq5").onclick=()=>{lastInput=Date.now();if(me){const a=Math.random()*Math.PI*2,r=5+Math.random()*3;me.tx=clampX(Math.cos(a)*r);me.tz=clampZ(Math.sin(a)*r);follow=true;$("follow5").textContent="Camera: following you";lastAct=Date.now();}
+    $("sq5").onclick=()=>{lastInput=Date.now();if(me){const a=Math.random()*Math.PI*2,r=7+Math.random()*3;me.tx=clampX(Math.cos(a)*r);me.tz=clampZ(Math.sin(a)*r);follow=true;$("follow5").textContent="Camera: following you";lastAct=Date.now();}
       else{focusAt=new THREE.Vector3(0,0,0);focusUntil=Date.now()+6000;dist=34;el=0.75;}};
     $("ceo5").onclick=()=>{focusAt=new THREE.Vector3(hq.x,2.4,hq.z);focusUntil=Date.now()+9000;az=hqDir;el=0.38;dist=20;follow=false;if(me)$("follow5").textContent="Camera: whole town";lastInput=Date.now();lastAct=Date.now();};
     { // suit details, in the body's own coordinates (front = +z)
@@ -1358,7 +1392,7 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       refreshBoard();const lbTimer=setInterval(refreshBoard,60000);unsubs.push(()=>clearInterval(lbTimer));
       const saved=store.get("city-me",null);if(saved&&SS58.check(saved.addr).ok)join(saved.addr,saved.nick||"",saved.role);else online();
     })();
-    cleanup=()=>{stop();cancelAnimationFrame(raf);ro.disconnect();document.removeEventListener("visibilitychange",vis);window.removeEventListener("keydown",kd);window.removeEventListener("keyup",ku);
+    cleanup=()=>{alive=false;stop();cancelAnimationFrame(raf);ro.disconnect();document.removeEventListener("visibilitychange",vis);window.removeEventListener("keydown",kd);window.removeEventListener("keyup",ku);
       unsubs.forEach(u=>{try{u()}catch(e){}});if(room){if(me)room.presence({addr:null}).catch(()=>{});room.close();}renderer.dispose();};
   }
 
