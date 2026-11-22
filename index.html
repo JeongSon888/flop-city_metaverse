@@ -182,6 +182,25 @@ input.txt{flex:1;min-width:0;font:400 .95rem var(--body);border:1px solid var(--
 .stat span{font:500 .66rem var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .stat b{font:700 .95rem var(--mono)}
 .lb li:nth-child(-n+3) .rk{font-size:1rem}
+/* role dashboards, CEO, zones, idle warning */
+#game[data-role] .joinbox#me5{border-color:color-mix(in srgb,var(--silicon) 45%,var(--line));background:color-mix(in srgb,var(--silicon) 6%,var(--wafer))}
+.rolepanel{--rc:var(--silicon);border-radius:12px;padding:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--rc) 16%,var(--panel)),var(--panel));border:1px solid color-mix(in srgb,var(--rc) 40%,var(--line))}
+.rphead{display:flex;gap:10px;align-items:flex-start}
+.rpic{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;background:var(--rc);box-shadow:0 6px 14px -6px var(--rc)}
+.rphead b{display:block;font:700 1rem var(--display);color:var(--rc)}
+.rphead span{font-size:.82rem;color:var(--muted);line-height:1.4}
+.rpstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.rpstats div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 9px;min-width:0}
+.rpstats span{display:block;font:500 .64rem var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.rpstats b{font:700 1rem var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.rptip{margin:8px 0 0;font-size:.8rem;color:var(--fg)}
+@media (max-width:480px){.rpstats{grid-template-columns:1fr 1fr}}
+#hudMe{border-color:var(--silicon)}
+.hud.bc.idlewarn #actHint{background:var(--bad);color:#fff}
+.tag.who.ceo{background:#0f1424;color:#ffb070;border:1.5px solid #ffb070;font-weight:700}
+.tag.who.ceo::before{background:#ffb070}
+.tag.say.ceosay{--c:#ffb070;background:#0f1424;color:#fff;max-width:220px;font-weight:500}
+.tag.place.zone{font-size:.66rem;background:var(--c);color:#fff;border-color:var(--c)}
 .foot{color:var(--muted);font-size:.78rem;line-height:1.5;border-top:1px solid var(--line);padding-top:12px}
 </style>
 </head>
@@ -196,7 +215,7 @@ input.txt{flex:1;min-width:0;font:400 .95rem var(--body);border:1px solid var(--
   </header>
   <nav class="floors" id="floors" aria-label="Floors"></nav>
   <section class="stage" id="stage" aria-live="polite"></section>
-  <p class="foot">A fan project for fun. Not affiliated with FLOP Labs. Balances are read live from the FLOP devnet; devnet FLOP has no value. Progress is saved in your browser.</p>
+  <p class="foot">A fan project for fun. Not affiliated with FLOP Labs, NVIDIA, AMD, Intel or TSMC; their names appear only as town landmarks. The CEO character is a fan-made NPC: his lines are this game's town rules, not real quotes. Balances are read live from the FLOP devnet; devnet FLOP has no value. Progress is saved in your browser.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -418,6 +437,29 @@ const FLOPCHAIN=(()=>{
   return {twox128,storageKey,decodeAccount,balances,xxh64};
 })();
 
+  // ---------- word filter: masks swearing in chat, names and news (Vietnamese + English) ----------
+  const WORDS_BAD=(()=>{
+    const strip=t=>t.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D");
+    // phrases matched with Vietnamese accents kept (so "các", "lớn", "buổi" stay clean)
+    const accented=["địt","đụ","đéo","lồn","cặc","buồi","đĩ","đái vào","óc chó","chó má","chó chết","súc vật","mẹ mày","bố mày","má mày","khốn nạn","thằng ngu","con ngu","đồ ngu","ngu như bò","cút mẹ","vãi lồn","vãi cả lồn","con đĩ","đầu buồi","mặt lồn"];
+    // short slang, matched as whole words after removing accents
+    const tokens=["dm","dmm","dcm","dkm","dmn","cmm","clm","vcl","vkl","vcc","vl","cc","djt","dit","du ma","dit me","dit con me","deo me","fck","stfu"];
+    // English stems, matched inside words too
+    const stems=["fuck","shit","bitch","cunt","asshole","dickhead","nigga","nigger","faggot","retard","whore","slut","bastard","motherf"];
+    const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    const reAcc=new RegExp(accented.map(esc).join("|"),"giu");
+    const reTok=new RegExp("(^|[^\\p{L}\\p{N}])("+tokens.map(esc).join("|")+")(?=$|[^\\p{L}\\p{N}])","giu");
+    const reStem=new RegExp("("+stems.map(esc).join("|")+")[\\p{L}]*","giu");
+    function find(text){const t=String(text||"").normalize("NFC");const out=[];let m;
+      reAcc.lastIndex=0;while((m=reAcc.exec(t)))out.push([m.index,m[0].length]);
+      const st=strip(t);// strip keeps the same length for Vietnamese letters, so indexes line up
+      if(st.length===t.length){reTok.lastIndex=0;while((m=reTok.exec(st)))out.push([m.index+m[1].length,m[2].length]);reStem.lastIndex=0;while((m=reStem.exec(st)))out.push([m.index,m[0].length]);}
+      else{reTok.lastIndex=0;if(reTok.test(st))out.push([0,t.length]);reStem.lastIndex=0;if(reStem.test(st))out.push([0,t.length]);}
+      return {t,hits:out};}
+    function clean(text){const {t,hits}=find(text);if(!hits.length)return t;const a=[...t];hits.forEach(([i,l])=>{for(let k=i;k<i+l&&k<a.length;k++)if(a[k]!==" ")a[k]="*";});return a.join("");}
+    return {clean,has:text=>find(text).hits.length>0};
+  })();
+
   // ---------- Floor 5: 3D AI City ----------
   function L5(f){
     const game=stageHead(f,"");
@@ -447,6 +489,7 @@ const FLOPCHAIN=(()=>{
       </div>
       <div class="joinbox" id="me5" hidden>
         <div class="bar"><span id="meTxt" class="metxt"></span><button class="btn ghost" id="follow5" type="button">Camera: following you</button><button class="btn ghost" id="leave5" type="button">Leave</button></div>
+        <div class="rolepanel" id="rolePanel"></div>
         <form class="bar" id="sayForm"><input class="txt" id="sayIn" maxlength="80" autocomplete="off" placeholder="Say something to the town…"><button class="btn ghost">Say</button></form>
         <p class="note"><span id="earn5">Your live devnet balance is shown at the top left of the city.</span> Tap the ground to walk there, or use W A S D / arrow keys. Your name joins the leaderboard automatically.</p>
       </div>
@@ -653,6 +696,38 @@ const FLOPCHAIN=(()=>{
       C(A.top,B.top,skyMat.uniforms.top.value);C(A.bot,B.bot,skyMat.uniforms.bottom.value);C(A.sun,B.sun,sun.color);C(A.fog,B.fog,scene.fog.color);
       sun.intensity=L(A.si,B.si);hemi.intensity=L(A.hi,B.hi);renderer.toneMappingExposure=L(A.ex,B.ex);lampHead.emissiveIntensity=L(A.lamp,B.lamp);skyMats.forEach(m=>m.emissiveIntensity=L(A.win,B.win));
       const ang=0.6+Math.min(t,1.6)*0.45;sun.position.set(Math.cos(ang)*45,Math.max(8,42-Math.min(t,1.5)*22),22);}
+    // role gathering zones: every new player arrives on the pad of their role
+    const ZONES={miner:{x:-21,z:-4.6,c:"#3d5afe",t:"⛏️ Miner zone"},delegator:{x:-21,z:4.6,c:"#8a4dff",t:"🤝 Delegator zone"},
+      auditor:{x:21,z:-4.6,c:"#0a9bb0",t:"🔍 Auditor zone"},validator:{x:21,z:4.6,c:"#cc3b3b",t:"🛡️ Validator zone"},
+      builder:{x:6.5,z:-13.4,c:"#15925a",t:"🛠️ Builder zone"},agent:{x:-6.5,z:13.4,c:"#c99700",t:"🤖 Agent zone"}};
+    Object.values(ZONES).forEach(zn=>{const col=new THREE.Color(zn.c).getHex();
+      const pad=new THREE.Mesh(new THREE.CylinderGeometry(2.3,2.4,0.08,40),new THREE.MeshStandardMaterial({color:0xf4f6f9,roughness:.5}));pad.position.set(zn.x,0.04,zn.z);pad.receiveShadow=true;scene.add(pad);
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(2.3,0.07,8,48),glow(col));rim.rotation.x=Math.PI/2;rim.position.set(zn.x,0.1,zn.z);scene.add(rim);
+      const inner=new THREE.Mesh(new THREE.RingGeometry(1.2,1.35,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.55}));inner.rotation.x=-Math.PI/2;inner.position.set(zn.x,0.09,zn.z);scene.add(inner);
+      anim.push(t=>{inner.rotation.z=t*0.0006;});
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,2.4,8),M.steel);post.position.set(zn.x+2.2,1.2,zn.z);scene.add(post);
+      const flag=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.55),new THREE.MeshStandardMaterial({color:col,side:THREE.DoubleSide,emissive:col,emissiveIntensity:.25}));flag.position.set(zn.x+2.67,2.1,zn.z);scene.add(flag);
+      const tg=document.createElement("div");tg.className="tag place zone";tg.style.setProperty("--c",zn.c);tg.textContent=zn.t;tags.appendChild(tg);zn.tag=tg;zn.anchor=new THREE.Vector3(zn.x,2.9,zn.z);});
+    // chip factories outside the town (names only, fan-made, not affiliated)
+    const FABS=[{n:"NVIDIA Fab",x:-27,c:"#76b900"},{n:"AMD Fab",x:-9,c:"#ed1c24"},{n:"Intel Fab",x:9,c:"#0071c5"},{n:"TSMC Fab",x:27,c:"#c8102e"}];
+    const steamM=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.55,roughness:1,depthWrite:false});
+    FABS.forEach(fb=>{const z=-31,col=new THREE.Color(fb.c).getHex();
+      const hall=rbox(11,3.4,7,0.5,M.white);add(hall,fb.x,0,z);
+      const glassBand=rbox(11.06,0.9,7.06,0.5,M.darkGlass);add(glassBand,fb.x,1.2,z);
+      for(let k=0;k<4;k++){        const tg=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.0,6.6),M.white);tg.position.set(fb.x-4+k*2.6,3.9,z);tg.rotation.z=0.42;tg.castShadow=true;scene.add(tg);
+        const sky=new THREE.Mesh(new THREE.PlaneGeometry(6.6,1.0),M.glass);sky.rotation.set(0,Math.PI/2,0);sky.position.set(fb.x-4+k*2.6+1.05,3.9,z);scene.add(sky);}
+      const stripe=rbox(11.1,0.3,7.1,0.5,new THREE.MeshStandardMaterial({color:col,roughness:.4,emissive:col,emissiveIntensity:.2}));add(stripe,fb.x,3.1,z);
+      const signTex=mkTex(512,128,(g,w,h)=>{g.fillStyle="#12182a";g.fillRect(0,0,w,h);g.fillStyle=fb.c;g.fillRect(0,0,14,h);g.fillStyle="#ffffff";g.font="700 66px sans-serif";g.textBaseline="middle";g.fillText(fb.n.toUpperCase(),40,56);g.fillStyle="#9aa6bd";g.font="500 22px sans-serif";g.fillText("GPU & CHIP FACTORY",42,104);});
+      const sign=new THREE.Mesh(new THREE.PlaneGeometry(5.2,1.3),new THREE.MeshStandardMaterial({map:signTex,emissive:0xffffff,emissiveMap:signTex,emissiveIntensity:.35}));sign.position.set(fb.x,2.2,z+3.56);scene.add(sign);
+      [-1,1].forEach(k=>{const ch=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.45,6.5,16),M.steel);ch.position.set(fb.x+k*4.2,3.25,z-2.4);ch.castShadow=true;scene.add(ch);
+        const band=new THREE.Mesh(new THREE.CylinderGeometry(0.37,0.37,0.3,16),new THREE.MeshStandardMaterial({color:col}));band.position.set(fb.x+k*4.2,5.9,z-2.4);scene.add(band);
+        const puffs=[0,1,2].map(i=>{const s=new THREE.Mesh(new THREE.SphereGeometry(0.5,10,8),steamM);scene.add(s);return s;});
+        anim.push(t=>puffs.forEach((s,i)=>{const u=((t*0.00025)+i/3+(k>0?.15:0))%1;s.position.set(fb.x+k*4.2+u*1.2,6.6+u*4,z-2.4);s.scale.setScalar(0.5+u*1.6);}));});
+      const truckM=new THREE.MeshStandardMaterial({color:col,roughness:.5});const truck=new THREE.Group();const box=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.9,0.8),M.white);box.position.y=0.65;truck.add(box);
+      const cab=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.8),truckM);cab.position.set(1.2,0.55,0);truck.add(cab);truck.traverse(o=>{if(o.isMesh)o.castShadow=true;});truck.position.set(fb.x+3.5,0,z+5);scene.add(truck);
+      contact(fb.x,z,16,11);
+      const tg=document.createElement("div");tg.className="tag place";tg.style.setProperty("--c",fb.c);tg.textContent=fb.n;tags.appendChild(tg);fb.tag=tg;fb.anchor=new THREE.Vector3(fb.x,8.2,z);});
+    road(-33,-26.2,33,-26.2);
     let todT=0;anim.push(t=>{const dt=todT?Math.min(0.25,(t-todT)/1000):0;todT=t;if(Math.abs(todWant-tod)>0.002){tod+=(todWant-tod)*Math.min(1,dt*1.8);applyTod(tod);}});
     function spot(pi,a){const p=PLACES[pi];const k=AG.filter(o=>o.at===pi).indexOf(a);const front=p.z<0?p.d/2+1.8:-p.d/2-1.8;return {x:p.x-1.8+(k%4)*1.2,z:p.z+front+(p.z<0?1:-1)*Math.floor(k/4)*1.1};}
     // NPC residents use the same body as players (validator is a robot)
@@ -669,7 +744,7 @@ const FLOPCHAIN=(()=>{
     const PANTS=new THREE.MeshStandardMaterial({color:0x2b3242,roughness:.7}),SHOE=new THREE.MeshStandardMaterial({color:0x1b1f27,roughness:.5}),
       EYE_W=new THREE.MeshBasicMaterial({color:0xffffff}),EYE_D=new THREE.MeshBasicMaterial({color:0x14181f});
     function mkPerson(col,seed,role,opt){
-      opt=opt||{};const g=new THREE.Group();const shirtCol=ROLES[role]?ROLES[role].col:col;
+      opt=opt||{};const g=new THREE.Group();const shirtCol=opt.shirt!=null?opt.shirt:ROLES[role]?ROLES[role].col:col;
       const accent=new THREE.MeshStandardMaterial({color:col,roughness:.45});const shirt=new THREE.MeshStandardMaterial({color:shirtCol,roughness:.55});
       const bot=!!opt.bot;
       const skin=bot?new THREE.MeshStandardMaterial({color:0xe9edf3,metalness:.55,roughness:.25,envMap:envCube}):new THREE.MeshStandardMaterial({color:[0xf1cfb0,0xd9a77f,0xf3d6c0,0xc68b62,0xeed3bc][seed%5],roughness:.75});
@@ -698,7 +773,7 @@ const FLOPCHAIN=(()=>{
         const glasses=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.05,0.04),new THREE.MeshStandardMaterial({color:0x222222}));glasses.position.set(0,1.59,0.24);g.add(glasses);}
       if(role==="builder"){const cap=new THREE.Mesh(new THREE.SphereGeometry(0.27,20,12,0,Math.PI*2,0,Math.PI/2.3),new THREE.MeshStandardMaterial({color:0x15925a,roughness:.5}));cap.position.y=1.61;g.add(cap);
         const peak=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.03,0.2),cap.material);peak.position.set(0,1.64,-0.3);g.add(peak);}
-      if(role==="validator"){const crown=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.035,8,28),glow(0xffc93c));crown.rotation.x=Math.PI/2;crown.position.y=1.98;g.add(crown);
+      if(role==="validator"){const crown=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.035,8,28),glow(0x7fd0ff));crown.rotation.x=Math.PI/2;crown.position.y=1.98;g.add(crown);
         const shield=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.03,6),new THREE.MeshStandardMaterial({color:0xcc3b3b,metalness:.3,roughness:.4}));shield.rotation.x=Math.PI/2;shield.position.set(0,1.05,0.29);g.add(shield);}
       const limb=(mat,len,x,y,r,end)=>{const piv=new THREE.Group();piv.position.set(x,y,0);const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r*0.85,len,10),mat);m.position.y=-len/2;piv.add(m);
         if(end==="hand"){const h=new THREE.Mesh(new THREE.SphereGeometry(r*1.05,10,8),skin);h.position.y=-len-0.02;piv.add(h);}
@@ -725,8 +800,8 @@ const FLOPCHAIN=(()=>{
       g.position.y=walking?Math.abs(Math.sin(now/105))*0.06:0;p.shadow.position.x=g.position.x;p.shadow.position.z=g.position.z;
       place(p.nameTag,g.position,3.0);if(p.line&&now-p.lineT<9000){p.sayTag.hidden=false;place(p.sayTag,g.position,3.95);}
       const mk=g.userData.marker;if(mk){mk.rotation.y=now*0.003;mk.position.y=2.62+Math.sin(now*0.004)*0.08;}else p.sayTag.hidden=true;}
-    let me=null,follow=true;const remotes=new Map();let room=null,db=null,userCap=null,unsubs=[];const keys={};
-    const clampX=x=>Math.max(-30,Math.min(30,x)),clampZ=z=>Math.max(-24,Math.min(24,z));
+    let me=null,follow=true,lastAct=Date.now();const remotes=new Map();let room=null,db=null,userCap=null,unsubs=[];const keys={};
+    const clampX=x=>Math.max(-34,Math.min(34,x)),clampZ=z=>Math.max(-27.5,Math.min(24,z));
     const camTarget=new THREE.Vector3(0,0,0);
     // camera controls
     let az=0.55,el=0.72,dist=50,dragging=false,px=0,py=0,lastInput=0;const pts=new Map();let pinch0=0;
@@ -752,11 +827,14 @@ const FLOPCHAIN=(()=>{
       tag.style.transform=`translate(-50%,-100%) translate(${tag._x}px,${tag._y}px)`;}
     // fade name tags that sit on top of each other (your own tag always wins)
     function declutter(){const list=[...tags.querySelectorAll(".tag.who,.tag.place")].filter(t=>t._on);
-      list.sort((a,b)=>(b.classList.contains("mine")-a.classList.contains("mine"))||(b.classList.contains("place")-a.classList.contains("place"))||(b._y-a._y));
+      list.sort((a,b)=>(b.classList.contains("mine")-a.classList.contains("mine"))||((b.classList.contains("place")&&!b.classList.contains("zone"))-(a.classList.contains("place")&&!a.classList.contains("zone")))||(b._y-a._y));
       const kept=[];list.forEach(t=>{const w=t.offsetWidth||60;const clash=kept.some(k=>Math.abs(k._x-t._x)<(w+(k.offsetWidth||60))/2-4&&Math.abs(k._y-t._y)<16);t.classList.toggle("faded",clash);if(!clash)kept.push(t);});}
     // minimap: buildings, agents, players, you
     const mini=$("mini5"),mctx=mini.getContext("2d");
-    function drawMini(){const W=mini.width,H=mini.height,sx=W/64,sz=H/52,X=x=>W/2+x*sx,Z=z=>H/2+z*sz;mctx.clearRect(0,0,W,H);
+    function drawMini(){const W=mini.width,H=mini.height,sx=W/76,sz=H/62,X=x=>W/2+x*sx,Z=z=>H/2+(z+5)*sz;mctx.clearRect(0,0,W,H);
+      FABS.forEach(fb=>{mctx.fillStyle=fb.c;mctx.globalAlpha=.6;mctx.fillRect(X(fb.x-5.5),Z(-34.5),11*sx,7*sz);});mctx.globalAlpha=1;
+      Object.values(ZONES).forEach(zn=>{mctx.strokeStyle=zn.c;mctx.lineWidth=1.5;mctx.beginPath();mctx.arc(X(zn.x),Z(zn.z),2.3*sx,0,7);mctx.stroke();});
+      mctx.fillStyle="#ffb070";mctx.fillRect(X(-27.5),Z(-16),5*sx,3*sz);
       mctx.strokeStyle="#9aa6b8";mctx.lineWidth=3;mctx.lineCap="round";mctx.beginPath();mctx.moveTo(X(-22),Z(0));mctx.lineTo(X(22),Z(0));[-13,0,13].forEach(x=>{mctx.moveTo(X(x),Z(-5));mctx.lineTo(X(x),Z(5));});mctx.stroke();
       mctx.strokeStyle="#4fb0ff88";mctx.lineWidth=1;mctx.beginPath();mctx.ellipse(X(0),Z(0),24*sx,16.5*sz,0,0,Math.PI*2);mctx.stroke();
       PLACES.forEach(p=>{mctx.fillStyle=p.c;mctx.globalAlpha=.85;mctx.fillRect(X(p.x-p.w/2),Z(p.z-p.d/2),p.w*sx,p.d*sz);});mctx.globalAlpha=1;
@@ -789,7 +867,7 @@ const FLOPCHAIN=(()=>{
         a.shadow.position.x=g.position.x;a.shadow.position.z=g.position.z;
         place(a.nameTag,g.position,3.0);
         if(a.line&&now-a.lineT<9000){a.sayTag.hidden=false;place(a.sayTag,g.position,3.95);}else a.sayTag.hidden=true;});
-      PLACES.forEach(p=>place(p.tag,p.anchor,0));
+      PLACES.forEach(p=>place(p.tag,p.anchor,0));Object.values(ZONES).forEach(zn=>place(zn.tag,zn.anchor,0));FABS.forEach(fb=>place(fb.tag,fb.anchor,0));
       fno++;if(fno%4===0){declutter();drawMini();}
       renderer.render(scene,camera);raf=requestAnimationFrame(frame);
     }
@@ -869,7 +947,7 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       const act=String(r.action||type).slice(0,60);a.mem.push(`${hour}:00 ${act}${result}`);if(a.mem.length>8)a.mem.shift();
       events.push(`${a.n} ${act}${result}`);if(events.length>12)events.shift();
       log(`${String(hour).padStart(2,"0")}:00 · ${a.n} @ ${PLACES[a.at].n}: ${act}${result}. “${a.line}”`,false,a.col);
-      drawAgents();busy=false;ticks++;
+      drawAgents();renderRolePanel();busy=false;ticks++;
       if(ticks===12){win(5,3);log("You watched the town for 12 hours. Floor 5 cleared!",true);}
       if(ticks%36===0){stop();log("The town is taking a break after 36 ticks. Press Resume to continue.",true);}
     }
@@ -877,7 +955,7 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
     function stop(){running=false;clearInterval(timer);timer=null;$("play5").textContent="▶ Resume";}
     $("play5").onclick=()=>running?stop():start();
     $("speed5").onclick=()=>{tickMs=tickMs===12000?25000:tickMs===25000?6000:12000;$("speed5").textContent=`Tick: ${tickMs/1000}s`;if(running){clearInterval(timer);timer=setInterval(tick,tickMs);}};
-    $("news5").onsubmit=e=>{e.preventDefault();const t=$("newsIn").value.trim();if(!t)return;$("newsIn").value="";events.push("BREAKING NEWS: "+t);log("Breaking news: "+t,true);};
+    $("news5").onsubmit=e=>{e.preventDefault();const t=WORDS_BAD.clean($("newsIn").value.trim());if(!t)return;$("newsIn").value="";events.push("BREAKING NEWS: "+t);log("Breaking news: "+t,true);};
     const vis=()=>{if(document.hidden&&running)stop();};document.addEventListener("visibilitychange",vis);
     log("Welcome to AI City. Agents claim free FLOP at the Faucet Mart and buy compute at the Gateway. Miners calibrate, then serve the jobs. The validator settles them on chain. Press Start.",true);drawAgents();frame();
     // ---------- joining and multiplayer ----------
@@ -901,41 +979,73 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
         const nm=document.createElement("span");nm.className="nm";nm.textContent=r.nick?`${r.nick} · ${shortAddr(r.addr)}`:shortAddr(r.addr);if(r.role){const rt=document.createElement("span");rt.className="rt";rt.textContent=ROLES[r.role].name;nm.appendChild(rt);}const b=document.createElement("b");b.textContent=fmtFlop(r.flop);
         li.append(rk,dot,nm,b);ol.appendChild(li);});
     }
-    async function registerResident(addr,nick,role){if(!sb)return;
-      try{const {error}=await sb.from("residents").upsert({addr,nick:nick||"",role:cleanRole(role)},{onConflict:"addr",ignoreDuplicates:true});
-        if(error)await sb.from("residents").upsert({addr,nick:nick||""},{onConflict:"addr",ignoreDuplicates:true});}catch(e){}}
-    let boardBusy=false;
+    // one wallet = one name: a wallet keeps the name it first registered, and a name can't be taken by two wallets
+    async function checkIdentity(addr,nick){
+      const low=(nick||"").toLowerCase();
+      for(const r of remotes.values()){if(r.addr===addr)return {ok:false,why:"This wallet is already in the city (another tab or device). One wallet can only be in the city once."};
+        if(low&&(r.nick||"").toLowerCase()===low)return {ok:false,why:`The name “${nick}” is already used by someone in the city. Pick another one.`};}
+      if(!sb)return {ok:true,nick,isNew:true};
+      try{const own=await sb.from("residents").select("addr,nick").eq("addr",addr).limit(1);
+        if(own.error)return {ok:true,nick,isNew:true};
+        if(own.data&&own.data.length){const saved=String(own.data[0].nick||"");return {ok:true,nick:saved,isNew:false,renamed:!!(nick&&saved.toLowerCase()!==low)};}
+        if(low){const esc=nick.replace(/[\\%_]/g,m=>"\\"+m);const tk=await sb.from("residents").select("addr").ilike("nick",esc).limit(1);
+          if(!tk.error&&tk.data&&tk.data.length)return {ok:false,why:`The name “${nick}” is already taken by another wallet. Pick another one.`};}
+        return {ok:true,nick,isNew:true};}catch(e){return {ok:true,nick,isNew:true};}}
+    async function registerResident(addr,nick,role){if(!sb)return {ok:true};
+      try{let {error}=await sb.from("residents").insert({addr,nick:nick||"",role:cleanRole(role)});
+        if(error&&error.code!=="23505"&&/role/i.test(error.message||""))({error}=await sb.from("residents").insert({addr,nick:nick||""}));
+        if(error&&error.code==="23505"){const own=await sb.from("residents").select("addr").eq("addr",addr).limit(1);if(own.data&&own.data.length)return {ok:true};return {ok:false,why:`The name “${nick}” is already taken by another wallet. Pick another one.`};}
+        return {ok:true};}catch(e){return {ok:true};}}
+    let boardBusy=false;const topRank=new Map();
+    const crownM=new THREE.MeshStandardMaterial({color:0xffc93c,metalness:.85,roughness:.22,emissive:0x8a5a00,emissiveIntensity:.35});
+    function mkCrown(rank){const c=new THREE.Group();const band=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.19,0.1,14,1,true),crownM);band.material.side=THREE.DoubleSide;c.add(band);
+      for(let k=0;k<5;k++){const a=k/5*Math.PI*2;const sp=new THREE.Mesh(new THREE.ConeGeometry(0.045,0.13,6),crownM);sp.position.set(Math.cos(a)*0.17,0.11,Math.sin(a)*0.17);c.add(sp);}
+      const gem=new THREE.Mesh(new THREE.SphereGeometry(0.04,10,8),glow(rank===1?0xff3d6e:rank<=3?0x3dd6ff:0x7dff9e));gem.position.set(0,0.02,0.19);c.add(gem);c.position.y=1.98;c.rotation.x=-0.12;return c;}
+    function crownLabel(p){const rk=topRank.get(p.addr);const base=p===me?`★ ${ROLES[p.role].name} · ${p.label}`:`${ROLES[p.role].name} · ${p.label}`;p.nameTag.textContent=rk?`👑${rk} ${base}`:base;}
+    function applyCrowns(){[me,...remotes.values()].forEach(p=>{if(!p)return;const rk=topRank.get(p.addr)||0;
+      if(rk&&p.crownRank!==rk){if(p.crown)p.g.remove(p.crown);p.crown=mkCrown(rk);p.g.add(p.crown);p.crownRank=rk;}
+      if(!rk&&p.crown){p.g.remove(p.crown);p.crown=null;p.crownRank=0;}crownLabel(p);});}
     async function refreshBoard(){
       if(boardBusy)return;boardBusy=true;
       try{
         let rows=[];
         if(sb){let res=await sb.from("residents").select("addr,nick,role").limit(500);if(res.error)res=await sb.from("residents").select("addr,nick").limit(500);
-          rows=(res.data||[]).filter(r=>SS58.check(r.addr).ok).map(r=>({addr:String(r.addr),nick:String(r.nick||"").replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16),role:ROLES[r.role]?r.role:""}));}
+          rows=(res.data||[]).filter(r=>SS58.check(r.addr).ok).map(r=>({addr:String(r.addr),nick:WORDS_BAD.clean(String(r.nick||"").replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16)),role:ROLES[r.role]?r.role:""}));}
         if(me&&!rows.some(r=>r.addr===me.addr))rows.push({addr:me.addr,nick:me.nick||"",role:me.role});
         regCount=rows.length;online();
         let bal={};try{bal=await FLOPCHAIN.balances(RPC,rows.map(r=>r.addr));$("lbnote").textContent="Live devnet balances (free + reserved) of every registered resident, refreshed every minute.";}
         catch(e){$("lbnote").textContent="The FLOP devnet RPC didn't answer just now. Balances will refresh in a minute.";}
         rows.forEach(r=>r.flop=bal[r.addr]==null?null:bal[r.addr]);
         rows.sort((a,b)=>(b.flop??-1)-(a.flop??-1));renderBoard(rows.slice(0,10));
+        topRank.clear();rows.filter(r=>r.flop!=null).slice(0,10).forEach((r,i)=>topRank.set(r.addr,i+1));applyCrowns();
         if(me)$("bal5").textContent=`${fmtFlop(bal[me.addr]??null)} FLOP`;
       }finally{boardBusy=false;}
     }
     function join(addr,nick,role){
       if(me){dropPerson(me);}role=cleanRole(role);
-      me=spawn(addr,nick,role,true);me.nameTag.textContent=`★ ${ROLES[role].name} · ${me.label}`;const home=PLACES[ROLES[role].home];const st=spot(ROLES[role].home,{});
-      me.g.position.set(st.x+(Math.random()-.5)*3,0,st.z+(home.z<0?1.2:-1.2));me.tx=me.g.position.x;me.tz=me.g.position.z;
+      me=spawn(addr,nick,role,true);me.nameTag.textContent=`★ ${ROLES[role].name} · ${me.label}`;const home=ZONES[role];home.n=home.t.replace(/^\S+\s/,"");
+      const ang=Math.random()*Math.PI*2,rr=Math.random()*1.4;me.g.position.set(home.x+Math.cos(ang)*rr,0,home.z+Math.sin(ang)*rr);me.tx=me.g.position.x;me.tz=me.g.position.z;
+      me.stats={a:0,b:0};lastAct=Date.now();$("game").dataset.role=role;$("game").style.setProperty("--silicon",ROLES[role].col);applyCrowns();renderRolePanel();
       me.nameTag.classList.add("mine");
       $("hudMe").hidden=false;$("hudAct").hidden=false;$("joinCta").hidden=true;$("hudIcon").textContent=ROLES[role].icon;$("hudIcon").style.setProperty("--rc",ROLES[role].col);$("hudName").textContent=me.label;
       dist=Math.min(dist,30);$("join5").hidden=true;$("me5").hidden=false;const art=/^[aeiou]/i.test(ROLES[role].name)?"an":"a";$("meTxt").textContent=`You are ${me.label}, ${art} ${ROLES[role].name.toLowerCase()}`;$("hint5").textContent="Tap the ground to walk · drag to rotate";
       store.set("city-me",{addr,nick,role});log(`${me.label} arrived as ${art} ${ROLES[role].name.toLowerCase()} at the ${home.n}.`,true,colorFromAddr(addr));
       events.push(`A human ${ROLES[role].name.toLowerCase()}, ${me.label}, arrived in town`);if(events.length>12)events.shift();
-      registerResident(addr,nick,role).then(refreshBoard);
+      refreshBoard();
       online();
     }
     $("joinForm").onsubmit=e=>{e.preventDefault();const raw=$("addrIn").value.trim();
       if(raw.split(/\s+/).length>=6){$("joinMsg").textContent="⚠️ That looks like a secret phrase, not an address. Delete it and never share it. Paste your public address (starts with 5).";$("joinMsg").classList.add("err");$("addrIn").value="";return;}
       const r=SS58.check(raw);if(!r.ok){$("joinMsg").textContent=r.why;$("joinMsg").classList.add("err");$("addrIn").parentElement.classList.add("bad");return;}
-      join(r.addr,$("nickIn").value.trim().replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16),pickedRole);};
+      const nick=$("nickIn").value.trim().replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16);const msg=$("joinMsg");
+      if(nick&&WORDS_BAD.has(nick)){msg.textContent="That nickname contains a blocked word. Please pick a friendly name.";msg.classList.add("err");return;}
+      const btn=$("joinBtn");btn.disabled=true;msg.classList.remove("err");msg.textContent="Checking your wallet and name…";
+      (async()=>{try{
+        const id=await checkIdentity(r.addr,nick);if(!id.ok){msg.textContent=id.why;msg.classList.add("err");return;}
+        if(id.isNew){const reg=await registerResident(r.addr,id.nick,pickedRole);if(!reg.ok){msg.textContent=reg.why;msg.classList.add("err");return;}}
+        join(r.addr,id.nick,pickedRole);
+        if(id.renamed)log(`This wallet is already registered as “${id.nick||shortAddr(r.addr)}”. One wallet keeps one name.`,true);
+      }finally{btn.disabled=false;}})();};
     let pickedRole="agent";
     document.querySelectorAll("#roleSel .role").forEach(b=>b.addEventListener("click",()=>{pickedRole=b.dataset.role;document.querySelectorAll("#roleSel .role").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}));
     // role action: do your job at your building (affects this town's numbers)
@@ -943,24 +1053,27 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       if(!me)return;const R0=ROLES[me.role];const P=PLACES[R0.work];
       const fz=P.z+(P.z<0?P.d/2+1.8:-P.d/2-1.8);const ok=Math.hypot(me.g.position.x-P.x,me.g.position.z-fz)<4.5;
       const btn=$("act5");btn.disabled=!ok;btn.textContent=ok?R0.verb:`Walk to the ${P.n}`;
-      $("actHint").textContent=ok?(me.role==="delegator"&&me.backing?`Backing ${me.backing} · earned ${(me.earned||0).toFixed(1)} FLOP`:""):`Your job happens at the ${P.n}.`;
+      if(!$("hudAct").classList.contains("idlewarn"))$("actHint").textContent=ok?(me.role==="delegator"&&me.backing?`Backing ${me.backing} · earned ${(me.earned||0).toFixed(1)} FLOP`:""):`Your job happens at the ${P.n}.`;
     }
-    $("act5").onclick=()=>{if(!me||$("act5").disabled)return;let msg="";
-      if(me.role==="agent"){net.bought++;net.queue.push(me.label);msg=`bought a compute job (queue ${net.queue.length})`;}
-      else if(me.role==="miner"){if(!net.queue.length)msg="found no jobs waiting yet";else{const n=Math.min(3,net.queue.length);net.queue.splice(0,n);net.served+=n;net.unsettled+=n;msg=`served ${n} job${n>1?"s":""}`;}}
-      else if(me.role==="validator"){if(!net.unsettled)msg="found nothing to settle yet";else{const n=net.unsettled;net.unsettled=0;net.settled+=n;msg=`settled ${n} session${n>1?"s":""} on chain`;}}
+    $("act5").onclick=()=>{if(!me||$("act5").disabled)return;let msg="";lastAct=Date.now();
+      if(me.role==="agent"){net.bought++;me.stats.a++;net.queue.push(me.label);msg=`bought a compute job (queue ${net.queue.length})`;}
+      else if(me.role==="miner"){if(!net.queue.length)msg="found no jobs waiting yet";else{const n=Math.min(3,net.queue.length);net.queue.splice(0,n);net.served+=n;net.unsettled+=n;me.stats.a+=n;msg=`served ${n} job${n>1?"s":""}`;}}
+      else if(me.role==="validator"){if(!net.unsettled)msg="found nothing to settle yet";else{const n=net.unsettled;net.unsettled=0;net.settled+=n;me.stats.a+=n;msg=`settled ${n} session${n>1?"s":""} on chain`;}}
       else if(me.role==="delegator"){const miners=AG.filter(x=>x.kind==="miner").map(x=>x.n).concat([...remotes.values()].filter(r=>r.role==="miner").map(r=>r.nick||shortAddr(r.addr)));
         const i=(miners.indexOf(me.backing)+1)%miners.length;me.backing=miners[i];me.earned=me.earned||0;msg=`now backs ${me.backing} with stake (10% of every job it serves comes back)`;}
       else if(me.role==="auditor"){const todo=net.served-net.audited;if(todo<=0)msg="found no new jobs to check";else{const n=Math.min(3,todo);net.audited+=n;
-          if(Math.random()<0.15){net.caught++;msg=`checked ${n} job${n>1?"s":""} and caught a bad proof! The miner gets slashed`;}else msg=`checked ${n} job${n>1?"s":""}: all proofs valid`;}}
-      else if(me.role==="builder"){net.apps++;net.bought+=2;net.queue.push(me.label+"'s app",me.label+"'s app");msg=`shipped app #${net.apps}, which bought 2 jobs`;}
+          me.stats.a+=n;if(Math.random()<0.15){net.caught++;me.stats.b++;msg=`checked ${n} job${n>1?"s":""} and caught a bad proof! The miner gets slashed`;}else msg=`checked ${n} job${n>1?"s":""}: all proofs valid`;}}
+      else if(me.role==="builder"){net.apps++;me.stats.a++;net.bought+=2;net.queue.push(me.label+"'s app",me.label+"'s app");msg=`shipped app #${net.apps}, which bought 2 jobs`;}
       me.line=msg.charAt(0).toUpperCase()+msg.slice(1)+"!";me.lineT=Date.now();me.sayTag.textContent=me.line;lastSync=0;
-      log(`${me.label} (${ROLES[me.role].name}) ${msg}.`,true,colorFromAddr(me.addr));events.push(`${me.label} the ${me.role} ${msg}`);if(events.length>12)events.shift();drawAgents();};
-    $("sayForm").onsubmit=e=>{e.preventDefault();const t=$("sayIn").value.trim();if(!t||!me)return;$("sayIn").value="";me.line=t.slice(0,80);me.lineT=Date.now();me.sayTag.textContent=me.line;
+      log(`${me.label} (${ROLES[me.role].name}) ${msg}.`,true,colorFromAddr(me.addr));events.push(`${me.label} the ${me.role} ${msg}`);if(events.length>12)events.shift();drawAgents();renderRolePanel();};
+    $("sayForm").onsubmit=e=>{e.preventDefault();const t=$("sayIn").value.trim();if(!t||!me)return;$("sayIn").value="";lastAct=Date.now();me.line=WORDS_BAD.clean(t.slice(0,80));me.lineT=Date.now();me.sayTag.textContent=me.line;
       log(`${me.label}: “${me.line}”`,false,colorFromAddr(me.addr));events.push(`${me.label} said: ${me.line}`);if(events.length>12)events.shift();lastSync=0;};
     $("follow5").onclick=()=>{follow=!follow;$("follow5").textContent=follow?"Camera: following you":"Camera: whole town";};
-    $("leave5").onclick=()=>{if(!me)return;dropPerson(me);me=null;store.set("city-me",null);if(room)room.presence({addr:null,nick:null,x:null,z:null,say:null,sayT:null}).catch(()=>{});
-      $("join5").hidden=false;$("me5").hidden=true;$("hudMe").hidden=true;$("hudAct").hidden=true;$("joinCta").hidden=false;$("hint5").textContent="Drag to rotate · scroll or pinch to zoom";online();};
+    function leaveCity(reason){if(!me)return;const who=me.label;dropPerson(me);me=null;store.set("city-me",null);if(room)room.presence({addr:null,nick:null,x:null,z:null,say:null,sayT:null}).catch(()=>{});
+      $("join5").hidden=false;$("me5").hidden=true;$("hudMe").hidden=true;$("hudAct").hidden=true;$("joinCta").hidden=false;$("hint5").textContent="Drag to rotate · scroll or pinch to zoom";
+      delete $("game").dataset.role;$("game").style.removeProperty("--silicon");
+      if(reason){$("joinMsg").textContent=reason;$("joinMsg").classList.add("err");log(`${who} was swept out of the city after 1 hour without activity.`,true);}online();}
+    $("leave5").onclick=()=>leaveCity();
     $("joinCta").onclick=()=>{$("join5").scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>$("addrIn").focus({preventScroll:true}),400);};
     $("fs5").onclick=()=>{const vw=$("view");try{if(document.fullscreenElement)document.exitFullscreen();else if(vw.requestFullscreen)vw.requestFullscreen();}catch(e){}};
     const addrLive=()=>{const raw=$("addrIn").value.trim();const w=$("addrIn").parentElement;w.classList.remove("ok","bad");const m=$("joinMsg");m.classList.remove("err");
@@ -969,8 +1082,48 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       const r=SS58.check(raw);if(r.ok){w.classList.add("ok");m.textContent="✓ Valid FLOP address. Pick a role and enter the city.";}
       else if(raw.length>=46){w.classList.add("bad");m.classList.add("err");m.textContent=r.why;}};
     $("addrIn").addEventListener("input",addrLive);
+    // ---------- idle sweep: 1 hour without activity and you leave the city ----------
+    const IDLE_MS=60*60*1000,IDLE_WARN=55*60*1000;const swept=new Map();
+    function sweep(){const now=Date.now();
+      if(me){const idle=now-lastAct;if(idle>IDLE_MS){leaveCity("You were swept out of the city after 1 hour without activity. Enter again any time.");return;}
+        $("hudAct").classList.toggle("idlewarn",idle>IDLE_WARN);if(idle>IDLE_WARN)$("actHint").textContent=`Idle — you'll be swept out in ${Math.max(1,Math.ceil((IDLE_MS-idle)/60000))} min. Move or tap to stay.`;}
+      remotes.forEach((r,k)=>{if(now-(r.lastChange||now)>IDLE_MS){swept.set(k,r.sig);dropPerson(r);remotes.delete(k);log(`${r.label} was swept out after 1 hour without activity.`,true);online();}});}
+    const sweepTimer=setInterval(sweep,15000);unsubs.push(()=>clearInterval(sweepTimer));
+    const bump=()=>{lastAct=Date.now();};el2.addEventListener("pointerdown",bump);
+    // ---------- each role gets its own panel ----------
+    const ROLE_UI={
+      miner:{d:"You run AI jobs on your GPU. Stand at the Miner Farm and serve the queue before the bots do.",s:()=>[["Jobs you served",me.stats.a],["Jobs waiting",net.queue.length],["Waiting to settle",net.unsettled]],tip:"Agents and builders fill the queue. More jobs = more work for miners."},
+      agent:{d:"You are an AI agent. Buy inference at the Gateway with FLOP; every job becomes work for a miner.",s:()=>[["Jobs you bought",me.stats.a],["Jobs waiting",net.queue.length],["Served in town",net.served]],tip:"Free FLOP: the Faucet Mart gives agents a daily claim."},
+      validator:{d:"You keep the ledger honest. Settle served sessions on chain at Validator Hall.",s:()=>[["Sessions you settled",me.stats.a],["Waiting to settle",net.unsettled],["Settled in town",net.settled]],tip:"Miners serve first, then you settle. Watch the 'waiting' number."},
+      delegator:{d:"You back a miner with stake and earn a share of every job it serves.",s:()=>[["Backing",me.backing||"nobody yet"],["You earned",(me.earned||0).toFixed(1)+" FLOP"],["Miners in town",AG.filter(x=>x.kind==="miner").length+[...remotes.values()].filter(r=>r.role==="miner").length]],tip:"Go to the Miner Farm and press the button to switch miners."},
+      auditor:{d:"You spot-check proofs at the Proof Lab. Catch fake work and the miner gets slashed.",s:()=>[["Jobs you checked",me.stats.a],["Cheats you caught",me.stats.b],["Not checked yet",Math.max(0,net.served-net.audited)]],tip:"Every served job can be checked. Bad proofs show up about 1 in 7 times."},
+      builder:{d:"You ship apps at the Gateway. Each app brings new paid jobs into the network.",s:()=>[["Apps you shipped",me.stats.a],["Jobs you created",me.stats.a*2],["Jobs waiting",net.queue.length]],tip:"More apps → more jobs → more work for miners and validators."}};
+    function renderRolePanel(){const box=$("rolePanel");if(!box||!me)return;const R0=ROLES[me.role],U=ROLE_UI[me.role];box.style.setProperty("--rc",R0.col);box.innerHTML="";
+      const hd=document.createElement("div");hd.className="rphead";const ic=document.createElement("span");ic.className="rpic";ic.textContent=R0.icon;const tx=document.createElement("div");
+      const b=document.createElement("b");b.textContent=`${R0.name} dashboard`;const d=document.createElement("span");d.textContent=U.d;tx.append(b,d);hd.append(ic,tx);box.appendChild(hd);
+      const st=document.createElement("div");st.className="rpstats";U.s().forEach(([k,val])=>{const c=document.createElement("div");const sp=document.createElement("span");sp.textContent=k;const vb=document.createElement("b");vb.textContent=val;c.append(sp,vb);st.appendChild(c);});box.appendChild(st);
+      const tp=document.createElement("p");tp.className="rptip";tp.textContent="💡 "+U.tip;box.appendChild(tp);}
+    // ---------- the CEO stands at Flop Labs HQ and reads the city rules out loud ----------
+    const CEO_RULES=["Agents pay FLOP for compute. Miners earn FLOP by serving real inference.","Miners: calibrate your GPU before you serve a single job.","Every paid session is verified and settled by a validator.",
+      "Auditors check proofs. Fake work gets slashed.","Faucet Mart: one free claim per agent per day.","Never share your 24-word secret phrase. Not with anyone, not even me.",
+      "Devnet and testnet FLOP have no value. Play for fun.","Be kind in chat. Swear words get filtered.","One wallet, one name. No duplicates.","Idle for 1 hour? You get swept out of the city.","Top 10 FLOP holders wear a crown. Go earn yours."];
+    const hq={x:-25,z:-14.5};
+    const stage=rbox(5,0.35,3.4,0.4,M.white);add(stage,hq.x,0,hq.z);
+    const carpet=new THREE.Mesh(new THREE.PlaneGeometry(4.2,2.6),new THREE.MeshStandardMaterial({color:0x1f2a44,roughness:.8}));carpet.rotation.x=-Math.PI/2;carpet.position.set(hq.x,0.37,hq.z);scene.add(carpet);
+    const lect=rbox(0.7,1.05,0.5,0.1,new THREE.MeshStandardMaterial({color:0x1f2a44,roughness:.4}));add(lect,hq.x+0.9,0.35,hq.z+0.5);
+    const hqTex=mkTex(512,160,(g,w,h)=>{g.fillStyle="#0f1424";g.fillRect(0,0,w,h);g.fillStyle="#ffb070";g.font="700 64px sans-serif";g.textBaseline="middle";g.fillText("FLOP LABS",30,62);g.fillStyle="#9fb2ff";g.font="600 28px sans-serif";g.fillText("HQ · CITY RULES",32,122);});
+    const hqSign=new THREE.Mesh(new THREE.PlaneGeometry(4.2,1.3),new THREE.MeshStandardMaterial({map:hqTex,emissive:0xffffff,emissiveMap:hqTex,emissiveIntensity:.4}));hqSign.position.set(hq.x,2.6,hq.z-1.65);scene.add(hqSign);
+    [-2,2].forEach(k=>{const pst=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,3.3,8),M.steel);pst.position.set(hq.x+k*1.05,1.65,hq.z-1.7);scene.add(pst);});
+    const ceo=mkPerson("#ffb070",11,"ceo",{shirt:0x1f2a44});ceo.g.position.set(hq.x,0.35,hq.z);ceo.g.rotation.y=Math.atan2(-hq.x,-hq.z);
+    ceo.nameTag.classList.remove("player");ceo.nameTag.classList.add("ceo");ceo.nameTag.textContent="Arthur Hayes · CEO (NPC)";ceo.sayTag.classList.add("ceosay");
+    const tie=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.32,0.02),new THREE.MeshStandardMaterial({color:0xcc3b3b}));tie.position.set(0,1.1,0.26);ceo.g.add(tie);
+    const hqTag=document.createElement("div");hqTag.className="tag place";hqTag.style.setProperty("--c","#c4682b");hqTag.textContent="Flop Labs HQ";tags.appendChild(hqTag);const hqAnchor=new THREE.Vector3(hq.x-2.6,1.3,hq.z+1.9);
+    let ceoIdx=0;function ceoSpeak(){ceo.line=`📜 Rule ${ceoIdx%CEO_RULES.length+1}: ${CEO_RULES[ceoIdx%CEO_RULES.length]}`;ceo.lineT=Date.now();ceo.sayTag.textContent=ceo.line;ceoIdx++;}
+    ceoSpeak();const ceoTimer=setInterval(ceoSpeak,9000);unsubs.push(()=>clearInterval(ceoTimer));
+    anim.push(t=>{ceo.limbs.ra.rotation.x=-0.6+Math.sin(t*0.004)*0.35;ceo.limbs.ra.rotation.z=-0.2;ceo.g.position.y=0.35;
+      place(ceo.nameTag,ceo.g.position,3.0);ceo.sayTag.hidden=false;place(ceo.sayTag,ceo.g.position,3.95);place(hqTag,hqAnchor,0);ceo.shadow.position.set(ceo.g.position.x,0.4,ceo.g.position.z);});
     const kmap={KeyW:"w",ArrowUp:"w",KeyS:"s",ArrowDown:"s",KeyA:"a",ArrowLeft:"a",KeyD:"d",ArrowRight:"d"};
-    const kd=e=>{const k=kmap[e.code];if(!k||!me)return;const tg=e.target&&e.target.tagName;if(tg==="INPUT"||tg==="TEXTAREA")return;keys[k]=true;e.preventDefault();};
+    const kd=e=>{const k=kmap[e.code];if(!k||!me)return;const tg=e.target&&e.target.tagName;if(tg==="INPUT"||tg==="TEXTAREA")return;keys[k]=true;lastAct=Date.now();e.preventDefault();};
     const ku=e=>{const k=kmap[e.code];if(k)keys[k]=false;};
     window.addEventListener("keydown",kd);window.addEventListener("keyup",ku);
     function makeRoom(){
@@ -1002,12 +1155,17 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       room=makeRoom();
       if(room){
         unsubs.push(room.onPeers(ch=>{
-          const seen=new Set();
-          ch.peers.forEach(pe=>{if(pe.sameTab||pe.kind!=="viewer")return;const pr=pe.presence||{};const chk=SS58.check(pr.addr);if(!chk.ok)return;seen.add(pe.peer);
-            let r=remotes.get(pe.peer);if(!r||r.addr!==chk.addr||r.role!==cleanRole(pr.role)){if(r)dropPerson(r);const nick=String(pr.nick||"").replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16);r=spawn(chk.addr,nick,pr.role);
-              r.g.position.set(clampX(+pr.x||0),0,clampZ(+pr.z||0));remotes.set(pe.peer,r);log(`${r.label} joined the city.`,true,colorFromAddr(chk.addr));}
+          const seen=new Set(),addrs=new Set();if(me)addrs.add(me.addr);const nowP=Date.now();
+          ch.peers.forEach(pe=>{if(pe.sameTab||pe.kind!=="viewer")return;const pr=pe.presence||{};const chk=SS58.check(pr.addr);if(!chk.ok)return;
+            if(addrs.has(chk.addr))return;// the same wallet twice: show it only once
+            const sig=JSON.stringify([+pr.x,+pr.z,pr.say||"",+pr.sayT||0,pr.role]);
+            if(swept.has(pe.peer)){if(swept.get(pe.peer)===sig)return;swept.delete(pe.peer);}// came back to life after the idle sweep
+            addrs.add(chk.addr);seen.add(pe.peer);
+            let r=remotes.get(pe.peer);if(!r||r.addr!==chk.addr||r.role!==cleanRole(pr.role)){if(r)dropPerson(r);const nick=WORDS_BAD.clean(String(pr.nick||"").replace(/[^\p{L}\p{N} _.-]/gu,"").slice(0,16));r=spawn(chk.addr,nick,pr.role);
+              r.g.position.set(clampX(+pr.x||0),0,clampZ(+pr.z||0));remotes.set(pe.peer,r);r.lastChange=nowP;r.sig=sig;applyCrowns();log(`${r.label} joined the city.`,true,colorFromAddr(chk.addr));}
+            if(r.sig!==sig){r.sig=sig;r.lastChange=nowP;}
             if(Number.isFinite(+pr.x))r.tx=clampX(+pr.x);if(Number.isFinite(+pr.z))r.tz=clampZ(+pr.z);
-            const say=String(pr.say||"").slice(0,80);if(say&&+pr.sayT!==r.sayT){r.sayT=+pr.sayT;r.line=say;r.lineT=Date.now();r.sayTag.textContent=say;log(`${r.label}: “${say}”`,false,colorFromAddr(r.addr));}});
+            const say=WORDS_BAD.clean(String(pr.say||"").slice(0,80));if(say&&+pr.sayT!==r.sayT){r.sayT=+pr.sayT;r.line=say;r.lineT=Date.now();r.sayTag.textContent=say;log(`${r.label}: “${say}”`,false,colorFromAddr(r.addr));}});
           remotes.forEach((r,k)=>{if(!seen.has(k)){dropPerson(r);remotes.delete(k);}});
           online();
         },()=>{}));
