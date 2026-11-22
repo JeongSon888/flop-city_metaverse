@@ -96,6 +96,7 @@ input.txt{flex:1;min-width:0;font:400 .95rem var(--body);border:1px solid var(--
 /* Floor 5: 3D town */
 .view{position:relative;width:100%;aspect-ratio:16/10;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--sky);touch-action:none;max-width:100%}
 .view canvas{display:block;width:100%;height:100%}
+.view>canvas:not(.minimap){filter:saturate(1.3) contrast(1.14) brightness(1.02)}
 .tag{position:absolute;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap}
 .tag.place{font:700 .86rem var(--display);padding:4px 10px;border-radius:8px;background:var(--c);border:2px solid #fff;color:#fff;letter-spacing:.02em;box-shadow:0 3px 10px #0004;text-shadow:0 1px 2px #0005}
 .tag.who{font:600 .68rem var(--body);color:var(--fg);text-shadow:0 0 3px var(--panel),0 0 3px var(--panel)}
@@ -122,7 +123,7 @@ input.txt{flex:1;min-width:0;font:400 .95rem var(--body);border:1px solid var(--
 .lb li i{width:10px;height:10px;border-radius:50%} .lb li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .lb li b{font:700 .85rem var(--mono)}
 .lb li.me{outline:2px solid var(--silicon)}
 .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-@media (max-width:480px){.roles{grid-template-columns:repeat(2,1fr)}}
+
 .role{border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:9px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}
 .role b{font:700 .9rem var(--display)} .role span{font-size:.74rem;color:var(--muted);line-height:1.35}
 .role[aria-pressed="true"]{border-color:var(--silicon);box-shadow:0 0 0 2px var(--silicon) inset}
@@ -233,7 +234,7 @@ input.txt{flex:1;min-width:0;font:400 .95rem var(--body);border:1px solid var(--
     {id:2,name:"Load Balancer",diff:"Medium",rules:"Split 9 jobs across 3 GPUs so each GPU carries exactly 15 units. Tap a job, then tap a GPU. Tap a number inside a GPU to send it back."},
     {id:3,name:"Read the AI",diff:"Tricky",rules:"The AI thinks of a tech word and gives you a clue. Every wrong guess earns a new clue. You have 5 guesses."},
     {id:4,name:"Firmware Crack",diff:"Hard",rules:"Crack a 4-digit code, each digit 1 to 6 (repeats allowed). ● means right digit, right spot. ○ means right digit, wrong spot. You have 8 tries."},
-    {id:5,name:"AI City",diff:"Brutal",boss:true,rules:"A town built on the FLOP story. Pick a role (miner, agent, validator, delegator, auditor or builder), join with your FLOP wallet address, and walk around with other players. AI agents grab free FLOP at the Faucet Mart, buy compute at the Gateway, miners calibrate their GPUs and serve the jobs, and a validator settles every session on chain. On every tick one resident thinks with the AI. Drop some news and watch the town react. Drag to rotate, scroll or pinch to zoom."}
+    {id:5,name:"AI City",diff:"Brutal",boss:true,rules:"A town built on the FLOP story. Pick a role (agent, miner or validator), join with your FLOP wallet address, and walk around with other players. AI agents grab free FLOP at the Faucet Mart, buy compute at the Gateway, miners calibrate their GPUs and serve the jobs, and a validator settles every session on chain. On every tick one resident thinks with the AI. Drop some news and watch the town react. Drag to rotate, scroll or pinch to zoom."}
   ];
   const FLOOR_LOOK=[{i:"🧩",c:"#15925a"},{i:"⚖️",c:"#3d5afe"},{i:"💬",c:"#7c4dff"},{i:"🔐",c:"#cc3b3b"},{i:"🏙️",c:"#c4682b"}];
   let stars=store.get("tw-stars",{}), current=1, cleanup=null, sample=null;
@@ -470,7 +471,7 @@ const FLOPCHAIN=(()=>{
       <div class="bar" style="margin:8px 0"><button class="btn" id="play5">▶ Start</button><button class="btn ghost" id="speed5">Tick: 12s</button><span class="note" id="clock5"></span></div>
       <div class="view" id="view"><div id="tags"></div>
         <div class="hud tl" id="hudMe" hidden><span class="hic" id="hudIcon"></span><div><b id="hudName"></b><span class="flopbal" id="bal5">… FLOP</span></div></div>
-        <div class="hud tr"><span class="pill" id="hudClock">Day 1 · 08:00</span><span class="pill" id="hudOnline">● 0 online</span><button class="pill pbtn ceobtn" id="ceo5" type="button" title="Show the CEO">📜 CEO</button><button class="pill pbtn" id="fs5" type="button" title="Full screen" aria-label="Full screen">⛶</button></div>
+        <div class="hud tr"><span class="pill" id="hudClock">Day 1 · 08:00</span><span class="pill" id="hudOnline">● 0 online</span><button class="pill pbtn ceobtn" id="ceo5" type="button" title="Show the CEO">📜 CEO</button><button class="pill pbtn ceobtn" id="sq5" type="button" title="Go to Town Square">🏛️ Square</button><button class="pill pbtn" id="fs5" type="button" title="Full screen" aria-label="Full screen">⛶</button></div>
         <canvas class="minimap" id="mini5" width="132" height="104" aria-label="Map of the city"></canvas>
         <div class="hud bc" id="hudAct" hidden><button class="btn" id="act5" type="button" disabled>Walk to your building</button><span id="actHint"></span></div>
         <button class="hud joincta" id="joinCta" type="button">Join the city ↓</button>
@@ -482,9 +483,6 @@ const FLOPCHAIN=(()=>{
           <button type="button" class="role" data-role="miner" aria-pressed="false"><i>⛏️</i><b>Miner</b><span>Serve AI jobs on your GPU at the Miner Farm</span></button>
           <button type="button" class="role" data-role="agent" aria-pressed="true"><i>🤖</i><b>Agent</b><span>Buy AI compute at the Gateway with FLOP</span></button>
           <button type="button" class="role" data-role="validator" aria-pressed="false"><i>🛡️</i><b>Validator</b><span>Settle paid sessions on chain at Validator Hall</span></button>
-          <button type="button" class="role" data-role="delegator" aria-pressed="false"><i>🤝</i><b>Delegator</b><span>Back a miner with stake and share what it earns</span></button>
-          <button type="button" class="role" data-role="auditor" aria-pressed="false"><i>🔍</i><b>Auditor</b><span>Spot-check miners' proofs at the Proof Lab</span></button>
-          <button type="button" class="role" data-role="builder" aria-pressed="false"><i>🛠️</i><b>Builder</b><span>Ship apps at the Gateway that bring new jobs</span></button>
         </div>
         <div class="step"><span class="sn">2</span>Paste your public wallet address</div>
         <form class="jform" id="joinForm"><div class="addrwrap"><input class="txt" id="addrIn" maxlength="60" autocomplete="off" spellcheck="false" placeholder="5… your FLOP wallet address"><span class="addrok" id="addrOk" aria-hidden="true"></span></div><input class="txt nick" id="nickIn" maxlength="16" autocomplete="off" placeholder="Nickname (optional)"><button class="btn" id="joinBtn">Enter the city →</button></form>
@@ -508,12 +506,12 @@ const FLOPCHAIN=(()=>{
     if(!window.THREE){$("view").innerHTML='<p class="note" style="padding:16px">The 3D engine failed to load. Reload the page to try again.</p>';return;}
     const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
     const PLACES=[
-      {n:"Miner Farm",x:-13,z:-7,c:"#3d5afe",w:7,d:5,h:2.2,does:"miners serve inference jobs here"},
-      {n:"Gateway",x:0,z:-8,c:"#d9a400",w:6,d:4,h:3,does:"agents pay FLOP here to buy AI compute"},
-      {n:"Proof Lab",x:13,z:-7,c:"#7c4dff",w:4,d:4,h:7,does:"proofs check that miners really ran the model"},
-      {n:"Calibration Center",x:-13,z:7,c:"#c4682b",w:6,d:5,h:3.5,does:"miners benchmark their GPU to get a cap before serving"},
-      {n:"Faucet Mart",x:0,z:8,c:"#15925a",w:8,d:4.5,h:2.8,does:"agents claim free FLOP once per day"},
-      {n:"Validator Hall",x:13,z:7,c:"#cc3b3b",w:6,d:4,h:4.5,does:"the validator settles paid sessions on chain"}];
+      {n:"Miner Farm",x:-26,z:-17,c:"#3d5afe",w:7,d:5,h:2.2,does:"miners serve inference jobs here"},
+      {n:"Gateway",x:0,z:-22,c:"#d9a400",w:6,d:4,h:3,does:"agents pay FLOP here to buy AI compute"},
+      {n:"Proof Lab",x:26,z:-17,c:"#7c4dff",w:4,d:4,h:7,does:"proofs check that miners really ran the model"},
+      {n:"Calibration Center",x:-26,z:17,c:"#c4682b",w:6,d:5,h:3.5,does:"miners benchmark their GPU to get a cap before serving"},
+      {n:"Faucet Mart",x:0,z:22,c:"#15925a",w:8,d:4.5,h:2.8,does:"agents claim free FLOP once per day"},
+      {n:"Validator Hall",x:26,z:17,c:"#cc3b3b",w:6,d:4,h:4.5,does:"the validator settles paid sessions on chain"}];
     const AG=[
       {n:"Luna",kind:"miner",role:"miner with a home RTX 5070",p:"hard-working, grumbles about power bills, dreams of a 48 GB card",home:3,col:"#3d5afe",flop:1},
       {n:"Max",kind:"agent",role:"AI agent that runs research tasks",p:"impatient, talks fast, always wants more compute",home:4,col:"#d9a400",flop:2},
@@ -527,31 +525,64 @@ const FLOPCHAIN=(()=>{
     const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
     renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputEncoding=THREE.sRGBEncoding;
     renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.8;view.prepend(renderer.domElement);
-    const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(40,1.6,0.1,500);
+    const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(40,1.6,0.1,1000);
     const rnd=(()=>{let s=7;return()=>((s=(s*16807)%2147483647)/2147483647);})();
     const mkTex=(w,h,draw,rep)=>{const c=document.createElement("canvas");c.width=w;c.height=h;draw(c.getContext("2d"),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;
       if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep[0],rep[1]);}return t;};
     const skyMat=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,uniforms:{top:{value:new THREE.Color(0x5aa7ff)},bottom:{value:new THREE.Color(0xeef6ff)}},
       vertexShader:"varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}",
       fragmentShader:"uniform vec3 top;uniform vec3 bottom;varying vec3 vP;void main(){float h=clamp(vP.y*1.6+0.1,0.0,1.0);gl_FragColor=vec4(mix(bottom,top,pow(h,0.8)),1.0);}"});
-    const skyDome=new THREE.Mesh(new THREE.SphereGeometry(250,32,16),skyMat);scene.add(skyDome);
+    const skyDome=new THREE.Mesh(new THREE.SphereGeometry(420,32,16),skyMat);scene.add(skyDome);
     // simple sky cube map for glass reflections (no float textures needed)
     const face=(kind)=>{const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");
       if(kind==="top"){g.fillStyle="#5aa2f5";g.fillRect(0,0,64,64);}else if(kind==="bottom"){g.fillStyle="#b9c3cf";g.fillRect(0,0,64,64);}
       else{const gr=g.createLinearGradient(0,0,0,64);gr.addColorStop(0,"#5aa2f5");gr.addColorStop(.48,"#e8f2ff");gr.addColorStop(.52,"#d5dce5");gr.addColorStop(1,"#aab4c0");g.fillStyle=gr;g.fillRect(0,0,64,64);
         g.fillStyle="rgba(255,255,255,.9)";g.fillRect(10,20,14,10);g.fillRect(36,14,10,14);}return c;};
     const envCube=new THREE.CubeTexture([face("side"),face("side"),face("top"),face("bottom"),face("side"),face("side")]);envCube.encoding=THREE.sRGBEncoding;envCube.needsUpdate=true;
-    scene.fog=new THREE.Fog(0xe3eefb,110,240);
+    scene.fog=new THREE.Fog(0xc9dcf2,210,420);
     const hemi=new THREE.HemisphereLight(0xffffff,0x8a96a8,0.38);scene.add(hemi);
-    const sun=new THREE.DirectionalLight(0xfff3e2,1.7);sun.position.set(28,42,22);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-    Object.assign(sun.shadow.camera,{left:-34,right:34,top:30,bottom:-30,near:1,far:140});sun.shadow.bias=-0.0004;sun.shadow.radius=4;scene.add(sun);
+    const sun=new THREE.DirectionalLight(0xfff3e2,1.7);sun.position.set(40,60,32);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+    Object.assign(sun.shadow.camera,{left:-62,right:62,top:58,bottom:-58,near:1,far:220});sun.shadow.bias=-0.0004;sun.shadow.radius=4;scene.add(sun);
     // materials
     const M={white:new THREE.MeshStandardMaterial({color:0xdde2ea,roughness:.45,metalness:.05}),
       glass:new THREE.MeshStandardMaterial({color:0x5d9cf0,roughness:.08,metalness:.75,envMap:envCube,envMapIntensity:1.25}),
       darkGlass:new THREE.MeshStandardMaterial({color:0x2c5a98,roughness:.1,metalness:.7,envMap:envCube,envMapIntensity:1.0}),
-      green:new THREE.MeshStandardMaterial({color:0x4fae4c,roughness:.9}),steel:new THREE.MeshStandardMaterial({color:0xc9d1dc,roughness:.25,metalness:.7,envMap:envCube}),
+      green:new THREE.MeshStandardMaterial({color:0x3f8a3a,roughness:.9}),steel:new THREE.MeshStandardMaterial({color:0xc9d1dc,roughness:.25,metalness:.7,envMap:envCube}),
       solar:new THREE.MeshStandardMaterial({color:0x2a4f8f,roughness:.2,metalness:.6,envMap:envCube})};
     const glow=c=>new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.9,roughness:.4});
+    // ---- facade textures: real-looking walls instead of plain white blocks (1 texture tile = 4 m)
+    const wallTex=(draw)=>{const t=mkTex(256,256,draw);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(0.25,0.25);return t;};
+    const winRow=(g,y0,y1,glass)=>{for(let x=6;x<256;x+=32){g.fillStyle="#e8ecf1";g.fillRect(x-3,y0-3,26,y1-y0+6);g.fillStyle=glass;g.fillRect(x,y0,20,y1-y0);g.fillStyle="#ffffff30";g.fillRect(x,y0,8,y1-y0);}};
+    const T={
+      metal:wallTex((g,w,h)=>{g.fillStyle="#aeb7c2";g.fillRect(0,0,w,h);for(let x=0;x<w;x+=8){g.fillStyle=x%16?"#c3cad3":"#97a1ad";g.fillRect(x,0,3,h);}
+        g.fillStyle="#7d8794";g.fillRect(0,250,w,6);for(let x=6;x<w;x+=64){g.fillStyle="#d9dee4";g.fillRect(x-3,64,58,40);g.fillStyle="#2c4c72";g.fillRect(x,67,52,34);g.fillStyle="#ffffff28";g.fillRect(x,67,16,34);}}),
+      concrete:wallTex((g,w,h)=>{g.fillStyle="#d6d8da";g.fillRect(0,0,w,h);for(let k=0;k<1800;k++){g.fillStyle=Math.random()<.5?"#cdd0d3":"#dfe1e3";g.fillRect(Math.random()*w,Math.random()*h,2,2);}
+        g.fillStyle="#b9bdc2";g.fillRect(0,60,w,2);g.fillRect(0,224,w,3);for(let x=0;x<w;x+=128)g.fillRect(x,0,2,h);}),
+      stone:wallTex((g,w,h)=>{g.fillStyle="#e2dacb";g.fillRect(0,0,w,h);g.fillStyle="#cbc1ae";for(let y=0;y<h;y+=32){g.fillRect(0,y,w,2);for(let x=(y/32)%2?0:32;x<w;x+=64)g.fillRect(x,y,2,32);}
+        for(let k=0;k<900;k++){g.fillStyle=Math.random()<.5?"#d8cfbe":"#e9e2d5";g.fillRect(Math.random()*w,Math.random()*h,2,2);}}),
+      door:mkTex(128,128,(g,w,h)=>{g.fillStyle="#8d97a3";g.fillRect(0,0,w,h);for(let y=0;y<h;y+=8){g.fillStyle="#74808d";g.fillRect(0,y,w,2);}g.fillStyle="#f2c230";g.fillRect(0,h-10,w,10);for(let x=0;x<w;x+=20){g.fillStyle="#222";g.fillRect(x,h-10,10,10);}}),
+      roof:mkTex(128,128,(g,w,h)=>{g.fillStyle="#8e959e";g.fillRect(0,0,w,h);for(let k=0;k<1500;k++){g.fillStyle=Math.random()<.5?"#868d96":"#979ea6";g.fillRect(Math.random()*w,Math.random()*h,2,2);}})};
+    T.roof.wrapS=T.roof.wrapT=THREE.RepeatWrapping;T.roof.repeat.set(0.3,0.3);
+    const W={metal:new THREE.MeshStandardMaterial({map:T.metal,roughness:.5,metalness:.35,envMap:envCube,envMapIntensity:.6}),
+      concrete:new THREE.MeshStandardMaterial({map:T.concrete,roughness:.85}),stone:new THREE.MeshStandardMaterial({map:T.stone,roughness:.8}),
+      roof:new THREE.MeshStandardMaterial({map:T.roof,roughness:.9}),door:new THREE.MeshStandardMaterial({map:T.door,roughness:.6,metalness:.3})};
+    const winStripTex=mkTex(256,128,(g,w,h)=>{g.fillStyle="#e9edf1";g.fillRect(0,0,w,h);for(let x=0;x<w;x+=64){g.fillStyle="#2f5079";g.fillRect(x+5,8,54,h-16);g.fillStyle="#ffffff2e";g.fillRect(x+5,8,16,h-16);g.fillStyle="#e9edf1";g.fillRect(x+31,8,2,h-16);}});
+    winStripTex.wrapS=THREE.RepeatWrapping;
+    function windowStrip(cx,cy,cz,len,ht,rotY){const t=winStripTex.clone();t.needsUpdate=true;t.wrapS=THREE.RepeatWrapping;t.repeat.set(Math.max(1,Math.round(len/1.1))/4,1);
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(len,ht),new THREE.MeshStandardMaterial({map:t,roughness:.3,metalness:.2,envMap:envCube,envMapIntensity:.5}));m.position.set(cx,cy,cz);m.rotation.y=rotY;scene.add(m);return m;}
+    // rooftop units, small cars: the little things that make a place look lived-in
+    const acM=new THREE.MeshStandardMaterial({color:0xb4bcc6,roughness:.4,metalness:.4});
+    function roofUnits(x,y,z,n,spreadX,spreadZ){for(let k=0;k<n;k++){const u=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.55,0.7),acM);b.position.y=0.28;u.add(b);
+      const f=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.24,0.04,16),new THREE.MeshStandardMaterial({color:0x3a4048}));f.position.y=0.57;u.add(f);
+      u.position.set(x+(rnd()-.5)*spreadX,y,z+(rnd()-.5)*spreadZ);u.rotation.y=rnd()*0.3;u.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(u);}}
+    const carCols=[0xd23b3b,0xf2f2f2,0x2b2f36,0x2f6fd6,0x9aa3ad,0xe0b43a,0x1f8a5a];const carGlass=new THREE.MeshStandardMaterial({color:0x0e1520,roughness:.15,metalness:.5,envMap:envCube,envMapIntensity:.5});
+    const tyreM=new THREE.MeshStandardMaterial({color:0x15171a,roughness:.8});
+    function car(x,z,rot){const c=new THREE.Group();const paint=new THREE.MeshStandardMaterial({color:carCols[Math.floor(rnd()*carCols.length)],roughness:.25,metalness:.5,envMap:envCube});
+      const body=new THREE.Mesh(new THREE.BoxGeometry(1.95,0.38,0.86),paint);body.position.y=0.36;c.add(body);const roofC=new THREE.Mesh(new THREE.BoxGeometry(0.95,0.05,0.74),paint);roofC.position.set(-0.12,0.86,0);c.add(roofC);const cab=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.3,0.76),carGlass);cab.position.set(-0.12,0.69,0);cab.scale.set(1,1,0.98);c.add(cab);
+      [[-0.62,-0.43],[0.62,-0.43],[-0.62,0.43],[0.62,0.43]].forEach(([a,b])=>{const t=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,0.12,14),tyreM);t.rotation.x=Math.PI/2;t.position.set(a,0.18,b);c.add(t);});
+      c.position.set(x,0,z);c.rotation.y=rot||0;c.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(c);}
+    function parking(x,z,n,rot){const lot=new THREE.Mesh(new THREE.PlaneGeometry(n*1.5+1,5),new THREE.MeshStandardMaterial({color:0x4b535d,roughness:.9}));lot.rotation.x=-Math.PI/2;lot.rotation.z=rot||0;lot.position.set(x,0.04,z);lot.receiveShadow=true;scene.add(lot);
+      const ca=Math.cos(rot||0),sa=Math.sin(rot||0);for(let k=0;k<n;k++){if(rnd()<.25)continue;const dx=(k-(n-1)/2)*1.5;car(x+dx*ca,z-dx*sa,(rot||0)+Math.PI/2+(rnd()-.5)*0.08);}}
     const shadowTex=mkTex(128,128,(g,w,h)=>{const gr=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);gr.addColorStop(0,"rgba(30,40,60,.45)");gr.addColorStop(1,"rgba(30,40,60,0)");g.fillStyle=gr;g.fillRect(0,0,w,h);});
     const contact=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(x,0.04,z);scene.add(m);return m;};
     function rbox(w,h,d,r,mat){const s=new THREE.Shape();const x=-w/2,y=-d/2;r=Math.min(r,w/2-0.01,d/2-0.01);
@@ -559,23 +590,34 @@ const FLOPCHAIN=(()=>{
       const geo=new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:false,curveSegments:8});geo.rotateX(-Math.PI/2);const m=new THREE.Mesh(geo,mat);m.castShadow=m.receiveShadow=true;return m;}
     const add=(m,x,y,z)=>{m.position.set(x,y,z);scene.add(m);return m;};
     // ground, roads, parks, water
-    const groundTex=mkTex(256,256,(g,w,h)=>{g.fillStyle="#86c06a";g.fillRect(0,0,w,h);for(let k=0;k<900;k++){g.fillStyle=Math.random()<.5?"#78b55c":"#93c978";g.fillRect(Math.random()*w,Math.random()*h,2,2);}g.strokeStyle="#b9d6a600";g.lineWidth=2;for(let k=0;k<=w;k+=64){g.beginPath();g.moveTo(k,0);g.lineTo(k,h);g.stroke();g.beginPath();g.moveTo(0,k);g.lineTo(w,k);g.stroke();}},[14,11]);
-    groundTex.repeat.set(40,40);const ground=new THREE.Mesh(new THREE.PlaneGeometry(320,320),new THREE.MeshStandardMaterial({map:groundTex,roughness:.9}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+    const groundTex=mkTex(256,256,(g,w,h)=>{ // natural lawn: soft mowing stripes + fine blades
+      g.fillStyle="#6a8a5a";g.fillRect(0,0,w,h);g.fillStyle="#6f905f";for(let y=0;y<h;y+=64)g.fillRect(0,y,w,32);
+      for(let k=0;k<2600;k++){const c=Math.random();g.fillStyle=c<.4?"#617f53":c<.8?"#789766":"#84a071";g.fillRect(Math.random()*w,Math.random()*h,1.5,3);}
+      g.strokeStyle="#b9d6a600";g.lineWidth=2;for(let k=0;k<=w;k+=64){g.beginPath();g.moveTo(k,0);g.lineTo(k,h);g.stroke();g.beginPath();g.moveTo(0,k);g.lineTo(w,k);g.stroke();}},[14,11]);
+    groundTex.repeat.set(40,40);const ground=new THREE.Mesh(new THREE.PlaneGeometry(320,320),new THREE.MeshStandardMaterial({map:groundTex,color:0xa9ada6,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
     const roadTex=mkTex(256,64,(g,w,h)=>{g.fillStyle="#4f5a68";g.fillRect(0,0,w,h);g.fillStyle="#ffffff";for(let k=10;k<w;k+=40)g.fillRect(k,h/2-1.5,20,3);g.fillStyle="#f4f6f9";g.fillRect(0,0,w,5);g.fillRect(0,h-5,w,5);});
-    const road=(x1,z1,x2,z2)=>{const len=Math.hypot(x2-x1,z2-z1);const t=roadTex.clone();t.needsUpdate=true;t.wrapS=THREE.RepeatWrapping;t.repeat.set(len/7,1);
+    const walkM=new THREE.MeshStandardMaterial({color:0xcfd3d8,roughness:.9});
+    const road=(x1,z1,x2,z2)=>{const len=Math.hypot(x2-x1,z2-z1);{const sw=new THREE.Mesh(new THREE.PlaneGeometry(len+1.2,4.4),walkM);sw.rotation.x=-Math.PI/2;sw.rotation.z=-Math.atan2(z2-z1,x2-x1);sw.position.set((x1+x2)/2,0.03,(z1+z2)/2);sw.receiveShadow=true;scene.add(sw);}const t=roadTex.clone();t.needsUpdate=true;t.wrapS=THREE.RepeatWrapping;t.repeat.set(len/7,1);
       const r=new THREE.Mesh(new THREE.PlaneGeometry(len,2.6),new THREE.MeshStandardMaterial({map:t,roughness:.6}));r.rotation.x=-Math.PI/2;r.rotation.z=-Math.atan2(z2-z1,x2-x1);r.position.set((x1+x2)/2,0.05,(z1+z2)/2);r.receiveShadow=true;scene.add(r);};
     const paveTex=mkTex(256,256,(g,w,h)=>{g.fillStyle="#c6ccd5";g.fillRect(0,0,w,h);g.strokeStyle="#c8ced6";g.lineWidth=2;for(let k=0;k<=w;k+=32){g.beginPath();g.moveTo(k,0);g.lineTo(k,h);g.stroke();g.beginPath();g.moveTo(0,k);g.lineTo(w,k);g.stroke();}},[12,9]);
-    const plaza=rbox(56,0.03,40,8,new THREE.MeshStandardMaterial({map:paveTex,roughness:.85}));plaza.castShadow=false;add(plaza,0,0,0);
-    road(-22,0,22,0);[-13,0,13].forEach(x=>{road(x,-1.3,x,-5.2);road(x,1.3,x,5.2);});
-    [[-27,-13,12,7],[27,13,12,7],[-27,13,10,8],[27,-13,10,8]].forEach(([x,z,w,d])=>{const p=rbox(w,0.15,d,2,M.green);p.castShadow=false;add(p,x,0,z);});
-    const water=rbox(30,0.08,4.5,2.2,new THREE.MeshStandardMaterial({color:0x4fa6f0,roughness:.05,metalness:.6,envMap:envCube,envMapIntensity:1.3}));water.castShadow=false;add(water,0,0.02,-18);
-    const edge=rbox(31,0.25,5.5,2.6,M.white);edge.castShadow=false;add(edge,0,0,-18);water.position.y=0.06;
+    const plaza=new THREE.Mesh(new THREE.CircleGeometry(19,72),new THREE.MeshStandardMaterial({map:paveTex,roughness:.85}));plaza.rotation.x=-Math.PI/2;plaza.position.y=0.02;plaza.receiveShadow=true;scene.add(plaza);
+    const RING=15.5;for(let k=0;k<20;k++){const a0=k/20*Math.PI*2,a1=(k+1)/20*Math.PI*2;road(Math.cos(a0)*RING,Math.sin(a0)*RING,Math.cos(a1)*RING,Math.sin(a1)*RING);}
+    road(-RING,0,-46,0);road(RING,0,46,0);
+    // Town Square: a big round public square in the middle of the city
+    const sqTex=mkTex(512,512,(g,w,h)=>{g.fillStyle="#e9dcc6";g.fillRect(0,0,w,h);g.translate(w/2,h/2);
+      for(let r=40;r<w/2;r+=44){g.strokeStyle=r%88<44?"#d4c2a4":"#cdb894";g.lineWidth=6;g.beginPath();g.arc(0,0,r,0,7);g.stroke();}
+      for(let k=0;k<16;k++){g.rotate(Math.PI/8);g.strokeStyle="#d6c5a8";g.lineWidth=3;g.beginPath();g.moveTo(40,0);g.lineTo(w/2,0);g.stroke();}});
+    const square=new THREE.Mesh(new THREE.CircleGeometry(14,64),new THREE.MeshStandardMaterial({map:sqTex,roughness:.85}));square.rotation.x=-Math.PI/2;square.position.y=0.045;square.receiveShadow=true;scene.add(square);
+    const sqRim=new THREE.Mesh(new THREE.TorusGeometry(14,0.14,8,96),new THREE.MeshStandardMaterial({color:0xb88a4a,roughness:.5}));sqRim.rotation.x=Math.PI/2;sqRim.position.y=0.06;scene.add(sqRim);
+    [[-43,-27,13,9],[43,27,13,9],[-43,27,12,9],[43,-27,12,9]].forEach(([x,z,w,d])=>{const p=rbox(w,0.15,d,2,M.green);p.castShadow=false;add(p,x,0,z);});
+    const water=rbox(30,0.08,4.5,2.2,new THREE.MeshStandardMaterial({color:0x4fa6f0,roughness:.05,metalness:.6,envMap:envCube,envMapIntensity:1.3}));water.castShadow=false;add(water,0,0.02,35);
+    const edge=rbox(31,0.25,5.5,2.6,M.white);edge.castShadow=false;add(edge,0,0,35);water.position.y=0.06;
     // trees: smooth modern canopies
-    const leafM=[0x3fa64a,0x2f9447,0x5cbf4f].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.75}));
+    const leafM=[0x2f8a3e,0x24763a,0x3f9a45].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.75}));
     const trees=[];const tree=(x,z,s)=>{const t=new THREE.Group();trees.push(t);const tr=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,1.1,8),M.white);tr.position.y=0.55;t.add(tr);
       const c=new THREE.Mesh(new THREE.SphereGeometry(0.75,18,14),leafM[Math.floor(rnd()*3)]);c.position.y=1.5;c.scale.set(1,1.15,1);t.add(c);t.traverse(o=>{if(o.isMesh)o.castShadow=true;});t.scale.setScalar(s);t.position.set(x,0,z);scene.add(t);return t;};
-    [[-27,-13],[27,13],[-27,13],[27,-13]].forEach(([cx,cz])=>{for(let k=0;k<6;k++)tree(cx+(rnd()-.5)*8,cz+(rnd()-.5)*5,0.8+rnd()*0.6);});
-    for(let k=-13;k<=13;k+=4.3){tree(k,-21.8,0.9);}
+    [[-43,-27],[43,27],[-43,27],[43,-27]].forEach(([cx,cz])=>{for(let k=0;k<8;k++)tree(cx+(rnd()-.5)*10,cz+(rnd()-.5)*6,0.9+rnd()*0.7);});
+    for(let k=-13;k<=13;k+=4.3){tree(k,39.5,0.9);}
     // buildings
     const anim=[];
     function tower(x,z,w,d,floors,opt){
@@ -586,7 +628,7 @@ const FLOPCHAIN=(()=>{
       g.position.set(x,0,z);scene.add(g);contact(x,z,w*1.9,d*1.9);return {g,top:y+0.25};
     }
     PLACES.forEach((p,i)=>{
-      {const pl=rbox(p.w+2.2,0.1,p.d+2.2,0.9,new THREE.MeshStandardMaterial({color:p.c,roughness:.55}));pl.castShadow=false;add(pl,p.x,0.01,p.z);}
+      {const kerb=rbox(p.w+2.6,0.08,p.d+2.6,1,new THREE.MeshStandardMaterial({color:p.c,roughness:.5}));kerb.castShadow=false;add(kerb,p.x,0.01,p.z);const walk=rbox(p.w+2.2,0.12,p.d+2.2,0.9,new THREE.MeshStandardMaterial({color:0xc9cdd2,roughness:.9}));walk.castShadow=false;add(walk,p.x,0.01,p.z);}
       let top=p.h;const fz=p.z+(p.z<0?p.d/2:-p.d/2)+(p.z<0?0.35:-0.35);
       if(i===0){ // GPU Farm: low campus with solar roof and cooling units
         const b=tower(p.x,p.z,p.w,p.d,1,{dark:true});top=b.top;
@@ -613,7 +655,7 @@ const FLOPCHAIN=(()=>{
         contact(p.x,p.z,8,8);top=h+2.6;
       }
       if(i===3){ // Chip Foundry: white hangar with skylight
-        const hg=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,p.w,40,1,false,0,Math.PI),M.white);hg.rotation.z=Math.PI/2;hg.rotation.y=Math.PI/2;hg.rotation.set(0,0,Math.PI/2);
+        const hgT=T.metal.clone();hgT.needsUpdate=true;hgT.repeat.set(2.2,1.6);const hg=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,p.w,40,1,false,0,Math.PI),new THREE.MeshStandardMaterial({map:hgT,roughness:.45,metalness:.4,envMap:envCube,envMapIntensity:.6,side:THREE.DoubleSide}));hg.rotation.z=Math.PI/2;hg.rotation.y=Math.PI/2;hg.rotation.set(0,0,Math.PI/2);
         hg.geometry.rotateZ(0);hg.position.set(p.x,0,p.z);hg.rotation.set(Math.PI/2,0,Math.PI/2);hg.castShadow=hg.receiveShadow=true;scene.add(hg);
         const sky=new THREE.Mesh(new THREE.BoxGeometry(p.w+0.02,0.12,0.9),M.glass);sky.position.set(p.x,2.62,p.z);scene.add(sky);
         const endA=new THREE.Mesh(new THREE.CircleGeometry(2.6,40,0,Math.PI),M.glass);endA.position.set(p.x,0,p.z+(p.z<0?2.6:-2.6));scene.add(endA);
@@ -621,7 +663,7 @@ const FLOPCHAIN=(()=>{
         contact(p.x,p.z,12,9);top=3.2;
       }
       if(i===4){ // Faucet Mart: supermarket where agents claim free FLOP
-        const body=rbox(p.w,p.h,p.d,0.7,M.white);add(body,p.x,0,p.z);
+        const body=rbox(p.w,p.h,p.d,0.7,[W.roof,W.concrete]);add(body,p.x,0,p.z);{const hw=p.w/2+0.015,hd=p.d/2+0.015;windowStrip(p.x,1.55,p.z+hd,p.w-1.6,1.1,0);windowStrip(p.x+hw,1.55,p.z,p.d-1.6,1.1,Math.PI/2);windowStrip(p.x-hw,1.55,p.z,p.d-1.6,1.1,-Math.PI/2);}parking(p.x,p.z+(p.z>0?6:-6),6,0);roofUnits(p.x-1.6,p.h,p.z+0.6,3,3,1.5);
         const fz2=p.z-p.d/2;const shop=new THREE.Mesh(new THREE.BoxGeometry(p.w-1,1.9,0.12),M.glass);shop.position.set(p.x,1.05,fz2-0.04);scene.add(shop);
         const can=new THREE.Mesh(new THREE.BoxGeometry(p.w+0.6,0.14,1.6),glow(0x15c47a));can.position.set(p.x,2.25,fz2-0.8);can.castShadow=true;scene.add(can);
         const signTex=mkTex(512,128,(g,w,h)=>{g.fillStyle="#ffffff";g.fillRect(0,0,w,h);g.fillStyle="#15925a";g.beginPath();g.moveTo(70,22);g.bezierCurveTo(30,70,40,108,70,108);g.bezierCurveTo(100,108,110,70,70,22);g.fill();
@@ -644,7 +686,10 @@ const FLOPCHAIN=(()=>{
         contact(p.x,p.z,12,8);top=p.h+2.2;
       }
       if(i===5){ // City Hall: white podium with glass dome
-        const pod=rbox(p.w,2.4,p.d,1,M.white);add(pod,p.x,0,p.z);const band=rbox(p.w-0.3,1.2,p.d-0.3,0.9,M.glass);add(band,p.x,0.7,p.z+(p.z<0?0.02:-0.02));
+        const pod=rbox(p.w,2.4,p.d,1,[W.stone,W.stone]);add(pod,p.x,0,p.z);{const fzv=p.z<0?p.z+p.d/2+0.02:p.z-p.d/2-0.02,ry=p.z<0?0:Math.PI;const dr=new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.9),M.darkGlass);dr.position.set(p.x,0.95,fzv);dr.rotation.y=ry;scene.add(dr);
+          windowStrip(p.x-1.9,1.3,fzv,1.6,1.2,ry);windowStrip(p.x+1.9,1.3,fzv,1.6,1.2,ry);
+          [-1.05,1.05].forEach(dx=>{const col=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.16,2.3,14),W.stone);col.position.set(p.x+dx,1.15,fzv+(p.z<0?0.35:-0.35));col.castShadow=true;scene.add(col);});
+          const step=new THREE.Mesh(new THREE.BoxGeometry(2.8,0.16,0.9),W.stone);step.position.set(p.x,0.08,fzv+(p.z<0?0.45:-0.45));step.receiveShadow=true;scene.add(step);}const band=rbox(p.w-0.3,1.2,p.d-0.3,0.9,M.glass);add(band,p.x,0.7,p.z+(p.z<0?0.02:-0.02));
         const dome=new THREE.Mesh(new THREE.SphereGeometry(2,40,20,0,Math.PI*2,0,Math.PI/2),M.glass);dome.position.set(p.x,2.4,p.z);dome.castShadow=true;scene.add(dome);
         const ring=new THREE.Mesh(new THREE.TorusGeometry(2.05,0.12,10,48),M.white);ring.rotation.x=Math.PI/2;ring.position.set(p.x,2.45,p.z);scene.add(ring);
         const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,2,8),M.steel);add(pole,p.x,5.4,p.z);
@@ -654,40 +699,51 @@ const FLOPCHAIN=(()=>{
       }
       const tg=document.createElement("div");tg.className="tag place";tg.style.setProperty("--c",p.c);tg.textContent=p.n;tags.appendChild(tg);p.tag=tg;p.anchor=new THREE.Vector3(p.x,top+0.6,p.z);
     });
+    PLACES.forEach(p=>{const fz=p.z+(p.z<0?p.d/2+2.4:-p.d/2-2.4);const L=Math.hypot(p.x,fz);const sx=p.x/L*RING,sz=fz/L*RING;road(sx,sz,p.x,fz);
+      const len=Math.hypot(p.x-sx,fz-sz),ux=(p.x-sx)/len,uz=(fz-sz)/len;for(let d=4;d<len-1.5;d+=3.6)[-1,1].forEach(side=>tree(sx+ux*d-uz*side*3.3,sz+uz*d+ux*side*3.3,0.85+rnd()*0.25));});
+    // tree rows along the avenue, flower beds around the square
+    for(let x=21;x<=44;x+=4.5)[-1,1].forEach(sx=>[-3.3,3.3].forEach(z=>{if(Math.abs((x-20)%6)<1)return;tree(sx*x,z,0.8+rnd()*0.2);}));
+    {const bedM=new THREE.MeshStandardMaterial({color:0x3e2b1d,roughness:1}),flowerM=[0xff6b8a,0xffc93c,0xffffff,0xb06bff].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:.7}));
+      for(let k=0;k<12;k++){const a=(k+0.5)/12*Math.PI*2;if(PLACES.some(p=>{const b=Math.atan2(p.z,p.x);return Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)))<0.22;})||Math.abs(Math.sin(a))<0.2)continue;
+        const bx=Math.cos(a)*18,bz=Math.sin(a)*18;const bed=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.4,0.25,20),bedM);bed.position.set(bx,0.12,bz);scene.add(bed);
+        for(let f=0;f<22;f++){const r=rnd()*1.1,t=rnd()*7;const fl=new THREE.Mesh(new THREE.SphereGeometry(0.16,8,6),flowerM[f%4]);fl.position.set(bx+Math.cos(t)*r,0.32,bz+Math.sin(t)*r);scene.add(fl);}}}
     // elevated skyway with maglev pods
-    const loop=new THREE.CatmullRomCurve3([...Array(16).keys()].map(k=>{const a=k/16*Math.PI*2;return new THREE.Vector3(Math.cos(a)*24,6.5+Math.sin(a*2)*0.4,Math.sin(a)*16.5);}),true);
-    const rail=new THREE.Mesh(new THREE.TubeGeometry(loop,200,0.35,10,true),M.white);rail.castShadow=true;scene.add(rail);
-    const railGlow=new THREE.Mesh(new THREE.TubeGeometry(loop,200,0.08,6,true),glow(0x4fb0ff));railGlow.position.y=0.3;scene.add(railGlow);
-    for(let k=0;k<12;k++){const pt=loop.getPointAt(k/12);const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.3,pt.y,12),M.white);pl.position.set(pt.x,pt.y/2,pt.z);pl.castShadow=true;scene.add(pl);contact(pt.x,pt.z,1.6,1.6);}
+    const loop=new THREE.CatmullRomCurve3([...Array(16).keys()].map(k=>{const a=k/16*Math.PI*2;return new THREE.Vector3(Math.cos(a)*55,8+Math.sin(a*2)*0.6,Math.sin(a)*45);}),true);
+    const rail=new THREE.Mesh(new THREE.TubeGeometry(loop,320,0.35,10,true),M.white);rail.castShadow=true;scene.add(rail);
+    const railGlow=new THREE.Mesh(new THREE.TubeGeometry(loop,320,0.08,6,true),glow(0x4fb0ff));railGlow.position.y=0.3;scene.add(railGlow);
+    for(let k=0;k<18;k++){const pt=loop.getPointAt(k/18);const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.3,pt.y,12),M.white);pl.position.set(pt.x,pt.y/2,pt.z);pl.castShadow=true;scene.add(pl);contact(pt.x,pt.z,1.6,1.6);}
     const pods=[0,0.33,0.66].map((o,k)=>{const pod=new THREE.Group();const body=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.6,20),M.white);body.rotation.z=Math.PI/2;pod.add(body);[-0.8,0.8].forEach(x=>{const cap=new THREE.Mesh(new THREE.SphereGeometry(0.45,20,12),M.white);cap.position.x=x;pod.add(cap);});
       const win=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.28,0.92),M.darkGlass);win.position.y=0.12;pod.add(win);const strip=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.06,0.94),glow([0xff7aa8,0x3dd6c4,0xffc93c][k]));strip.position.y=-0.15;pod.add(strip);
       pod.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(pod);return {pod,o};});
     const tmpV=new THREE.Vector3();
-    anim.push(t=>pods.forEach(({pod,o})=>{const u=((t*0.00004)+o)%1;const pt=loop.getPointAt(u);loop.getTangentAt(u,tmpV);pod.position.set(pt.x,pt.y+0.75,pt.z);pod.rotation.y=Math.atan2(-tmpV.z,tmpV.x);}));
+    anim.push(t=>pods.forEach(({pod,o})=>{const u=((t*0.00002)+o)%1;const pt=loop.getPointAt(u);loop.getTangentAt(u,tmpV);pod.position.set(pt.x,pt.y+0.75,pt.z);pod.rotation.y=Math.atan2(-tmpV.z,tmpV.x);}));
     // delivery drones
     const drones=[0,1,2,3].map(k=>{const d=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.18,0.5),M.white);d.add(b);
       const rotors=[];[[-0.4,-0.4],[0.4,-0.4],[-0.4,0.4],[0.4,0.4]].forEach(([x,z])=>{const r=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.02,12),M.steel);r.position.set(x,0.12,z);d.add(r);rotors.push(r);});
       const led=new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6),glow(0x3dd6c4));led.position.y=-0.12;d.add(led);const box=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.25,0.3),new THREE.MeshStandardMaterial({color:0xf2c58a}));box.position.y=-0.3;d.add(box);
       d.traverse(m=>{if(m.isMesh)m.castShadow=true;});scene.add(d);return {d,k,rotors};});
-    anim.push(t=>drones.forEach(({d,k,rotors})=>{const a=t*0.00025*(k%2?1:-1)+k*1.6;const R=10+k*3;d.position.set(Math.cos(a)*R,9+k*0.8+Math.sin(t*0.002+k)*0.3,Math.sin(a)*R*0.7);d.rotation.y=-a;rotors.forEach(r=>r.rotation.y=t*0.05);}));
+    anim.push(t=>drones.forEach(({d,k,rotors})=>{const a=t*0.00025*(k%2?1:-1)+k*1.6;const R=20+k*6;d.position.set(Math.cos(a)*R,12+k*0.8+Math.sin(t*0.002+k)*0.3,Math.sin(a)*R*0.7);d.rotation.y=-a;rotors.forEach(r=>r.rotation.y=t*0.05);}));
     // street lamps along the main road (they light up at night)
     const lampHead=new THREE.MeshStandardMaterial({color:0xfff4d6,emissive:0xffd58a,emissiveIntensity:.1,roughness:.3});
     const lampPost=new THREE.CylinderGeometry(0.05,0.07,2.6,8),lampTop=new THREE.SphereGeometry(0.17,12,8);
-    for(let x=-19;x<=19;x+=6.3)[-1.75,1.75].forEach(z=>{if(Math.abs(x-0)<1.6||Math.abs(Math.abs(x)-13)<1.6)return;const pst=new THREE.Mesh(lampPost,M.steel);pst.position.set(x,1.3,z);pst.castShadow=true;scene.add(pst);
-      const hd=new THREE.Mesh(lampTop,lampHead);hd.position.set(x,2.65,z);scene.add(hd);});
+    const lamp=(x,z)=>{const pst=new THREE.Mesh(lampPost,M.steel);pst.position.set(x,1.3,z);pst.castShadow=true;scene.add(pst);const hd=new THREE.Mesh(lampTop,lampHead);hd.position.set(x,2.65,z);scene.add(hd);};
+    for(let k=0;k<12;k++){const a=(k+0.5)/12*Math.PI*2;lamp(Math.cos(a)*13.3,Math.sin(a)*13.3);}
+    for(let x=20;x<=44;x+=6)[-1,1].forEach(sx=>[-1.8,1.8].forEach(z=>lamp(sx*x,z)));
     // benches and planters around the plaza
     const benchM=new THREE.MeshStandardMaterial({color:0xc08a5a,roughness:.7});
-    [[-6.5,-3.2],[6.5,-3.2],[-6.5,3.2],[6.5,3.2],[-19.5,-3.2],[19.5,3.2]].forEach(([x,z])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.12,0.5),benchM);b.position.set(x,0.45,z);b.castShadow=true;scene.add(b);
-      [-0.65,0.65].forEach(dx=>{const l=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.42,0.42),M.steel);l.position.set(x+dx,0.21,z);scene.add(l);});
-      const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.38,0.5,16),M.white);pl.position.set(x+1.4,0.25,z);pl.castShadow=true;scene.add(pl);
-      const bush=new THREE.Mesh(new THREE.SphereGeometry(0.45,14,10),leafM[1]);bush.position.set(x+1.4,0.72,z);bush.scale.y=0.8;bush.castShadow=true;scene.add(bush);});
+    for(let k=0;k<10;k++){const a=k/10*Math.PI*2+0.31;const bg=new THREE.Group();bg.position.set(Math.cos(a)*10,0,Math.sin(a)*10);bg.rotation.y=-a+Math.PI/2;scene.add(bg);
+      const b=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.12,0.55),benchM);b.position.y=0.45;b.castShadow=true;bg.add(b);const back=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.45,0.08),benchM);back.position.set(0,0.75,0.26);back.castShadow=true;bg.add(back);
+      [-0.9,0.9].forEach(dx=>{const l=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.42,0.46),M.steel);l.position.set(dx,0.21,0);bg.add(l);});
+      const a2=a+Math.PI/10;const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.45,0.55,16),M.white);pl.position.set(Math.cos(a2)*10.4,0.27,Math.sin(a2)*10.4);pl.castShadow=true;scene.add(pl);
+      const bush=new THREE.Mesh(new THREE.SphereGeometry(0.55,14,10),leafM[k%3]);bush.position.set(Math.cos(a2)*10.4,0.8,Math.sin(a2)*10.4);bush.scale.y=0.85;bush.castShadow=true;scene.add(bush);}
+    {const tg=document.createElement("div");tg.className="tag place";tg.style.setProperty("--c","#b07a2e");tg.textContent="🏛️ Town Square";tags.appendChild(tg);const anc=new THREE.Vector3(0,0.6,12.2);anim.push(()=>place(tg,anc,0));}
     // distant skyline so the town doesn't float in an empty plane
     const skyGeo=new THREE.BoxGeometry(1,1,1);skyGeo.translate(0,0.5,0);
     const winTex=mkTex(64,128,(g,w,h)=>{g.fillStyle="#26364f";g.fillRect(0,0,w,h);for(let y=4;y<h;y+=10)for(let x=4;x<w;x+=10){g.fillStyle=Math.random()<.35?"#ffd98a":"#3a4f70";g.fillRect(x,y,6,6);}});
     const skyMats=[new THREE.MeshStandardMaterial({color:0x9db7d6,roughness:.25,metalness:.5,envMap:envCube,emissive:0xffffff,emissiveMap:winTex,emissiveIntensity:0}),
       new THREE.MeshStandardMaterial({color:0xc9d3df,roughness:.4,metalness:.3,envMap:envCube,emissive:0xffffff,emissiveMap:winTex,emissiveIntensity:0})];
     skyMats.forEach((mt,k)=>{const n=46;const im=new THREE.InstancedMesh(skyGeo,mt,n);const o=new THREE.Object3D();
-      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+k*0.07+rnd()*0.05;const R=62+rnd()*26;const hgt=6+rnd()*rnd()*34;
+      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+k*0.07+rnd()*0.05;const R=88+rnd()*34;const hgt=6+rnd()*rnd()*34;
         o.position.set(Math.cos(a)*R*1.15,0,Math.sin(a)*R*0.95);o.scale.set(3+rnd()*4,hgt,3+rnd()*4);o.rotation.y=rnd()*Math.PI;o.updateMatrix();im.setMatrixAt(i,o.matrix);}
       scene.add(im);});
     // time of day: sky, sun, fog, lamps and windows follow the town clock
@@ -699,11 +755,11 @@ const FLOPCHAIN=(()=>{
     function applyTod(t){const [A,B,u]=t<=1?[SKY.day,SKY.gold,t]:[SKY.gold,SKY.night,t-1];const L=(a,b)=>a+(b-a)*u;const C=(a,b,out)=>out.set(a).lerp(cB.set(b),u);
       C(A.top,B.top,skyMat.uniforms.top.value);C(A.bot,B.bot,skyMat.uniforms.bottom.value);C(A.sun,B.sun,sun.color);C(A.fog,B.fog,scene.fog.color);
       sun.intensity=L(A.si,B.si);hemi.intensity=L(A.hi,B.hi);renderer.toneMappingExposure=L(A.ex,B.ex);lampHead.emissiveIntensity=L(A.lamp,B.lamp);skyMats.forEach(m=>m.emissiveIntensity=L(A.win,B.win));
-      const ang=0.6+Math.min(t,1.6)*0.45;sun.position.set(Math.cos(ang)*45,Math.max(8,42-Math.min(t,1.5)*22),22);}
+      const ang=0.6+Math.min(t,1.6)*0.45;sun.position.set(Math.cos(ang)*64,Math.max(12,60-Math.min(t,1.5)*30),32);}
     // role gathering zones: every new player arrives on the pad of their role
-    const ZONES={miner:{x:-21,z:-4.6,c:"#3d5afe",t:"⛏️ Miner zone"},delegator:{x:-21,z:4.6,c:"#8a4dff",t:"🤝 Delegator zone"},
-      auditor:{x:21,z:-4.6,c:"#0a9bb0",t:"🔍 Auditor zone"},validator:{x:21,z:4.6,c:"#cc3b3b",t:"🛡️ Validator zone"},
-      builder:{x:6.5,z:-13.4,c:"#15925a",t:"🛠️ Builder zone"},agent:{x:-6.5,z:13.4,c:"#c99700",t:"🤖 Agent zone"}};
+    const ZONES={miner:{x:-38,z:-9,c:"#3d5afe",t:"⛏️ Miner zone"},
+      validator:{x:38,z:9,c:"#cc3b3b",t:"🛡️ Validator zone"},
+      agent:{x:14,z:-31,c:"#c99700",t:"🤖 Agent zone"}};
     Object.values(ZONES).forEach(zn=>{const col=new THREE.Color(zn.c).getHex();
       const pad=new THREE.Mesh(new THREE.CylinderGeometry(2.3,2.4,0.08,40),new THREE.MeshStandardMaterial({color:0xf4f6f9,roughness:.5}));pad.position.set(zn.x,0.04,zn.z);pad.receiveShadow=true;scene.add(pad);
       const rim=new THREE.Mesh(new THREE.TorusGeometry(2.3,0.07,8,48),glow(col));rim.rotation.x=Math.PI/2;rim.position.set(zn.x,0.1,zn.z);scene.add(rim);
@@ -715,11 +771,18 @@ const FLOPCHAIN=(()=>{
     // chip factories outside the town (names only, fan-made, not affiliated)
     const FABS=[{n:"NVIDIA Fab",x:-27,c:"#76b900"},{n:"AMD Fab",x:-9,c:"#ed1c24"},{n:"Intel Fab",x:9,c:"#0071c5"},{n:"TSMC Fab",x:27,c:"#c8102e"}];
     const steamM=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:.55,roughness:1,depthWrite:false});
-    FABS.forEach(fb=>{const z=-31,col=new THREE.Color(fb.c).getHex();
-      const hall=rbox(11,3.4,7,0.5,M.white);add(hall,fb.x,0,z);
+    FABS.forEach(fb=>{const z=-52,col=new THREE.Color(fb.c).getHex();
+      const hall=rbox(11,3.4,7,0.5,[W.roof,W.metal]);add(hall,fb.x,0,z);
+      [-3,0,3].forEach(dx=>{const dr=new THREE.Mesh(new THREE.PlaneGeometry(2,2.2),W.door);dr.position.set(fb.x+dx,1.1,z+3.52);scene.add(dr);
+        const can=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.08,0.9),acM);can.position.set(fb.x+dx,2.45,z+3.9);can.castShadow=true;scene.add(can);});
+      const apron=new THREE.Mesh(new THREE.PlaneGeometry(11,3),new THREE.MeshStandardMaterial({color:0xb7bcc2,roughness:.9}));apron.rotation.x=-Math.PI/2;apron.position.set(fb.x,0.045,z+5);apron.receiveShadow=true;scene.add(apron);
+      [-1,1].forEach(k=>{const tk=new THREE.Mesh(new THREE.CylinderGeometry(1,1,3.2,24),M.steel);tk.position.set(fb.x+k*7,1.6,z-1);tk.castShadow=true;scene.add(tk);
+        const cap=new THREE.Mesh(new THREE.SphereGeometry(1,24,10,0,Math.PI*2,0,Math.PI/2),M.steel);cap.position.set(fb.x+k*7,3.2,z-1);scene.add(cap);
+        const pipe=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,1.6,10),acM);pipe.rotation.z=Math.PI/2;pipe.position.set(fb.x+k*6,2.4,z-1);scene.add(pipe);});
+      parking(fb.x,z+9.2,7,0);
       const glassBand=rbox(11.06,0.9,7.06,0.5,M.darkGlass);add(glassBand,fb.x,1.2,z);
-      for(let k=0;k<4;k++){        const tg=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.0,6.6),M.white);tg.position.set(fb.x-4+k*2.6,3.9,z);tg.rotation.z=0.42;tg.castShadow=true;scene.add(tg);
-        const sky=new THREE.Mesh(new THREE.PlaneGeometry(6.6,1.0),M.glass);sky.rotation.set(0,Math.PI/2,0);sky.position.set(fb.x-4+k*2.6+1.05,3.9,z);scene.add(sky);}
+      for(let k=0;k<4;k++){        const tg=new THREE.Mesh(new THREE.BoxGeometry(2.82,0.1,6.7),W.metal);tg.position.set(fb.x-4.2+k*2.6,3.93,z);tg.rotation.z=0.39;tg.castShadow=true;scene.add(tg);
+        const sky=new THREE.Mesh(new THREE.PlaneGeometry(6.6,1.05),M.darkGlass);sky.rotation.set(0,-Math.PI/2,0);sky.position.set(fb.x-4.2+k*2.6+1.3,3.93,z);scene.add(sky);}
       const stripe=rbox(11.1,0.3,7.1,0.5,new THREE.MeshStandardMaterial({color:col,roughness:.4,emissive:col,emissiveIntensity:.2}));add(stripe,fb.x,3.1,z);
       const signTex=mkTex(512,128,(g,w,h)=>{g.fillStyle="#12182a";g.fillRect(0,0,w,h);g.fillStyle=fb.c;g.fillRect(0,0,14,h);g.fillStyle="#ffffff";g.font="700 66px sans-serif";g.textBaseline="middle";g.fillText(fb.n.toUpperCase(),40,56);g.fillStyle="#9aa6bd";g.font="500 22px sans-serif";g.fillText("GPU & CHIP FACTORY",42,104);});
       const sign=new THREE.Mesh(new THREE.PlaneGeometry(5.2,1.3),new THREE.MeshStandardMaterial({map:signTex,emissive:0xffffff,emissiveMap:signTex,emissiveIntensity:.35}));sign.position.set(fb.x,2.2,z+3.56);scene.add(sign);
@@ -731,7 +794,7 @@ const FLOPCHAIN=(()=>{
       const cab=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.8),truckM);cab.position.set(1.2,0.55,0);truck.add(cab);truck.traverse(o=>{if(o.isMesh)o.castShadow=true;});truck.position.set(fb.x+3.5,0,z+5);scene.add(truck);
       contact(fb.x,z,16,11);
       const tg=document.createElement("div");tg.className="tag place";tg.style.setProperty("--c",fb.c);tg.textContent=fb.n;tags.appendChild(tg);fb.tag=tg;fb.anchor=new THREE.Vector3(fb.x,8.2,z);});
-    road(-33,-26.2,33,-26.2);
+    road(-46,-46.5,46,-46.5);road(-46,-46.5,-46,0);road(46,-46.5,46,0);
     let todT=0;anim.push(t=>{const dt=todT?Math.min(0.25,(t-todT)/1000):0;todT=t;if(Math.abs(todWant-tod)>0.002){tod+=(todWant-tod)*Math.min(1,dt*1.8);applyTod(tod);}});
     function spot(pi,a){const p=PLACES[pi];const k=AG.filter(o=>o.at===pi).indexOf(a);const front=p.z<0?p.d/2+1.8:-p.d/2-1.8;return {x:p.x-1.8+(k%4)*1.2,z:p.z+front+(p.z<0?1:-1)*Math.floor(k/4)*1.1};}
     // NPC residents use the same body as players (validator is a robot)
@@ -742,8 +805,7 @@ const FLOPCHAIN=(()=>{
     // players: people who join with a FLOP address
     function colorFromAddr(addr){const h=SS58.blake2b(new TextEncoder().encode(addr),4);return "#"+new THREE.Color().setHSL(((h[0]<<8)|h[1])/65535,0.62,0.52).getHexString();}
     const shortAddr=a=>a.slice(0,4)+"…"+a.slice(-4);
-    const ROLES={miner:{name:"Miner",home:0,work:0,verb:"Serve jobs",icon:"⛏️",col:"#3d5afe"},agent:{name:"Agent",home:4,work:1,verb:"Buy compute (1 job)",icon:"🤖",col:"#c99700"},validator:{name:"Validator",home:5,work:5,verb:"Settle sessions",icon:"🛡️",col:"#cc3b3b"},
-      delegator:{name:"Delegator",home:5,work:0,verb:"Delegate to the next miner",icon:"🤝",col:"#8a4dff"},auditor:{name:"Auditor",home:2,work:2,verb:"Spot-check proofs",icon:"🔍",col:"#0a9bb0"},builder:{name:"Builder",home:1,work:1,verb:"Ship an app (+2 jobs)",icon:"🛠️",col:"#15925a"}};
+    const ROLES={miner:{name:"Miner",home:0,work:0,verb:"Serve jobs",icon:"⛏️",col:"#3d5afe"},agent:{name:"Agent",home:4,work:1,verb:"Buy compute (1 job)",icon:"🤖",col:"#c99700"},validator:{name:"Validator",home:5,work:5,verb:"Settle sessions",icon:"🛡️",col:"#cc3b3b"}};
     const cleanRole=r=>ROLES[r]?r:"agent";
     const PANTS=new THREE.MeshStandardMaterial({color:0x2b3242,roughness:.7}),SHOE=new THREE.MeshStandardMaterial({color:0x1b1f27,roughness:.5}),
       EYE_W=new THREE.MeshBasicMaterial({color:0xffffff}),EYE_D=new THREE.MeshBasicMaterial({color:0x14181f});
@@ -805,16 +867,16 @@ const FLOPCHAIN=(()=>{
       place(p.nameTag,g.position,3.0);if(p.line&&now-p.lineT<9000){p.sayTag.hidden=false;place(p.sayTag,g.position,3.95);}
       const mk=g.userData.marker;if(mk){mk.rotation.y=now*0.003;mk.position.y=2.62+Math.sin(now*0.004)*0.08;}else p.sayTag.hidden=true;}
     let me=null,follow=true,lastAct=Date.now(),focusAt=null,focusUntil=0;const remotes=new Map();let room=null,db=null,userCap=null,unsubs=[];const keys={};
-    const clampX=x=>Math.max(-34,Math.min(34,x)),clampZ=z=>Math.max(-27.5,Math.min(24,z));
+    const clampX=x=>Math.max(-50,Math.min(50,x)),clampZ=z=>Math.max(-50,Math.min(42,z));
     const camTarget=new THREE.Vector3(0,0,0);
     // camera controls
-    let az=0.55,el=0.66,dist=40,dragging=false,px=0,py=0,lastInput=0;const pts=new Map();let pinch0=0;
+    let az=0.55,el=0.74,dist=70,dragging=false,px=0,py=0,lastInput=0;const pts=new Map();let pinch0=0;
     const el2=renderer.domElement;
     let tap0=null;const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
     el2.addEventListener("pointerdown",e=>{el2.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});dragging=true;px=e.clientX;py=e.clientY;lastInput=Date.now();tap0={x:e.clientX,y:e.clientY,t:Date.now()};
       if(pts.size===2){const [a,b]=[...pts.values()];pinch0=Math.hypot(a.x-b.x,a.y-b.y);}});
     el2.addEventListener("pointermove",e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});lastInput=Date.now();
-      if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch0){dist=Math.min(95,Math.max(18,dist*pinch0/d));}pinch0=d;return;}
+      if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch0){dist=Math.min(140,Math.max(18,dist*pinch0/d));}pinch0=d;return;}
       if(!dragging)return;az-=(e.clientX-px)*0.006;el=Math.min(1.35,Math.max(0.25,el+(e.clientY-py)*0.005));px=e.clientX;py=e.clientY;});
     const up=e=>{
       if(me&&tap0&&e.type==="pointerup"&&pts.size===1&&Math.hypot(e.clientX-tap0.x,e.clientY-tap0.y)<7&&Date.now()-tap0.t<400){
@@ -822,7 +884,7 @@ const FLOPCHAIN=(()=>{
         if(ray.ray.intersectPlane(groundPlane,hit)){me.tx=clampX(hit.x);me.tz=clampZ(hit.z);}}
       pts.delete(e.pointerId);if(pts.size<2)pinch0=0;if(!pts.size)dragging=false;};
     el2.addEventListener("pointerup",up);el2.addEventListener("pointercancel",up);
-    el2.addEventListener("wheel",e=>{e.preventDefault();dist=Math.min(95,Math.max(18,dist*(1+Math.sign(e.deltaY)*0.08)));lastInput=Date.now();},{passive:false});
+    el2.addEventListener("wheel",e=>{e.preventDefault();dist=Math.min(140,Math.max(18,dist*(1+Math.sign(e.deltaY)*0.08)));lastInput=Date.now();},{passive:false});
     function resize(){const w=view.clientWidth,h=view.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
     const ro=new ResizeObserver(resize);ro.observe(view);resize();
     const v=new THREE.Vector3();
@@ -835,12 +897,12 @@ const FLOPCHAIN=(()=>{
       const kept=[];list.forEach(t=>{const w=t.offsetWidth||60;const clash=kept.some(k=>Math.abs(k._x-t._x)<(w+(k.offsetWidth||60))/2-4&&Math.abs(k._y-t._y)<16);t.classList.toggle("faded",clash);if(!clash)kept.push(t);});}
     // minimap: buildings, agents, players, you
     const mini=$("mini5"),mctx=mini.getContext("2d");
-    function drawMini(){const W=mini.width,H=mini.height,sx=W/76,sz=H/62,X=x=>W/2+x*sx,Z=z=>H/2+(z+5)*sz;mctx.clearRect(0,0,W,H);
-      FABS.forEach(fb=>{mctx.fillStyle=fb.c;mctx.globalAlpha=.6;mctx.fillRect(X(fb.x-5.5),Z(-34.5),11*sx,7*sz);});mctx.globalAlpha=1;
+    function drawMini(){const W=mini.width,H=mini.height,sx=W/116,sz=H/100,X=x=>W/2+x*sx,Z=z=>H/2+(z+6)*sz;mctx.clearRect(0,0,W,H);
+      FABS.forEach(fb=>{mctx.fillStyle=fb.c;mctx.globalAlpha=.6;mctx.fillRect(X(fb.x-5.5),Z(-55.5),11*sx,7*sz);});mctx.globalAlpha=1;
       Object.values(ZONES).forEach(zn=>{mctx.strokeStyle=zn.c;mctx.lineWidth=1.5;mctx.beginPath();mctx.arc(X(zn.x),Z(zn.z),2.3*sx,0,7);mctx.stroke();});
-      mctx.fillStyle="#ffb070";mctx.fillRect(X(-27.5),Z(-16),5*sx,3*sz);
-      mctx.strokeStyle="#9aa6b8";mctx.lineWidth=3;mctx.lineCap="round";mctx.beginPath();mctx.moveTo(X(-22),Z(0));mctx.lineTo(X(22),Z(0));[-13,0,13].forEach(x=>{mctx.moveTo(X(x),Z(-5));mctx.lineTo(X(x),Z(5));});mctx.stroke();
-      mctx.strokeStyle="#4fb0ff88";mctx.lineWidth=1;mctx.beginPath();mctx.ellipse(X(0),Z(0),24*sx,16.5*sz,0,0,Math.PI*2);mctx.stroke();
+      mctx.fillStyle="#e9dcc6";mctx.beginPath();mctx.arc(X(0),Z(0),14*sx,0,7);mctx.fill();mctx.fillStyle="#ffb070";mctx.beginPath();mctx.arc(X(0),Z(0),2.6,0,7);mctx.fill();
+      mctx.strokeStyle="#9aa6b8";mctx.lineWidth=3;mctx.lineCap="round";mctx.lineWidth=2;mctx.beginPath();mctx.ellipse(X(0),Z(0),15.5*sx,15.5*sz,0,0,7);mctx.moveTo(X(-46),Z(0));mctx.lineTo(X(-15.5),Z(0));mctx.moveTo(X(15.5),Z(0));mctx.lineTo(X(46),Z(0));PLACES.forEach(p=>{const L=Math.hypot(p.x,p.z);mctx.moveTo(X(p.x/L*15.5),Z(p.z/L*15.5));mctx.lineTo(X(p.x),Z(p.z));});mctx.stroke();
+      mctx.strokeStyle="#4fb0ff88";mctx.lineWidth=1;mctx.beginPath();mctx.ellipse(X(0),Z(0),55*sx,45*sz,0,0,Math.PI*2);mctx.stroke();
       PLACES.forEach(p=>{mctx.fillStyle=p.c;mctx.globalAlpha=.85;mctx.fillRect(X(p.x-p.w/2),Z(p.z-p.d/2),p.w*sx,p.d*sz);});mctx.globalAlpha=1;
       AG.forEach(a=>{mctx.fillStyle="#fff";mctx.beginPath();mctx.arc(X(a.g.position.x),Z(a.g.position.z),2.2,0,7);mctx.fill();mctx.fillStyle=a.col;mctx.beginPath();mctx.arc(X(a.g.position.x),Z(a.g.position.z),1.6,0,7);mctx.fill();});
       remotes.forEach(r=>{mctx.fillStyle=r.col||"#888";mctx.beginPath();mctx.arc(X(r.g.position.x),Z(r.g.position.z),2.6,0,7);mctx.fill();});
@@ -886,7 +948,7 @@ const FLOPCHAIN=(()=>{
       todWant=todTarget(hour);
       $("hudClock").textContent=`${hour>=19||hour<6?"🌙":hour>=17?"🌇":"☀️"} Day ${day} · ${String(hour).padStart(2,"0")}:00`;
       const box5=$("net5");box5.innerHTML="";
-      [["Block","#"+net.block.toLocaleString("en-US")],["Faucet claims",net.claimed],["Jobs bought",net.bought],["Waiting",net.queue.length],["Served",net.served],["Settled",net.settled],["Audited",net.audited],["Cheats caught",net.caught],["Apps",net.apps]]
+      [["Block","#"+net.block.toLocaleString("en-US")],["Faucet claims",net.claimed],["Jobs bought",net.bought],["Waiting",net.queue.length],["Served",net.served],["Settled",net.settled]]
         .forEach(([k,val])=>{const d=document.createElement("div");d.className="stat";const s=document.createElement("span");s.textContent=k;const b=document.createElement("b");b.textContent=val;d.append(s,b);box5.appendChild(d);});
       $("calls5").textContent=`AI thoughts so far: ${calls}. On FLOP, each one could be a job for a miner.`;}
     const ACTIONS={agent:["claim_faucet","buy_inference","chat","rest"],miner:["calibrate","serve_jobs","chat","rest"],validator:["validate","chat","rest"]};
@@ -907,7 +969,7 @@ const FLOPCHAIN=(()=>{
       const from=a.at;a.at=pi;const s=spot(pi,a);a.base=s;a.nextIdle=Date.now()+8000;
       if(from===pi){a.path=[s];return;}
       const A=PLACES[from],B=PLACES[pi];a.travel=true;
-      a.path=[{x:A.x+(Math.random()-.5),z:A.z<0?-1.2:1.2},{x:B.x+(Math.random()-.5),z:B.z<0?-1.2:1.2},s];
+      const ring=(P,r)=>{const L=Math.hypot(P.x,P.z);return {x:P.x/L*r+(Math.random()-.5),z:P.z/L*r+(Math.random()-.5)};};a.path=[ring(A,15.5),ring(A,9),ring(B,9),ring(B,15.5),s];
     }
     const CANNED={agent:[["claim_faucet",4,"Free FLOP, here I come!"],["buy_inference",1,"Time to buy some compute."]],miner:[["calibrate",3,"Let's benchmark this GPU."],["serve_jobs",0,"Any jobs for me?"]],validator:[["validate",5,"Settling the ledger."]]};
     const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
@@ -1097,12 +1159,9 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
     const bump=()=>{lastAct=Date.now();};el2.addEventListener("pointerdown",bump);
     // ---------- each role gets its own panel ----------
     const ROLE_UI={
-      miner:{d:"You run AI jobs on your GPU. Stand at the Miner Farm and serve the queue before the bots do.",s:()=>[["Jobs you served",me.stats.a],["Jobs waiting",net.queue.length],["Waiting to settle",net.unsettled]],tip:"Agents and builders fill the queue. More jobs = more work for miners."},
+      miner:{d:"You run AI jobs on your GPU. Stand at the Miner Farm and serve the queue before the bots do.",s:()=>[["Jobs you served",me.stats.a],["Jobs waiting",net.queue.length],["Waiting to settle",net.unsettled]],tip:"Agents fill the queue. More jobs = more work for miners."},
       agent:{d:"You are an AI agent. Buy inference at the Gateway with FLOP; every job becomes work for a miner.",s:()=>[["Jobs you bought",me.stats.a],["Jobs waiting",net.queue.length],["Served in town",net.served]],tip:"Free FLOP: the Faucet Mart gives agents a daily claim."},
-      validator:{d:"You keep the ledger honest. Settle served sessions on chain at Validator Hall.",s:()=>[["Sessions you settled",me.stats.a],["Waiting to settle",net.unsettled],["Settled in town",net.settled]],tip:"Miners serve first, then you settle. Watch the 'waiting' number."},
-      delegator:{d:"You back a miner with stake and earn a share of every job it serves.",s:()=>[["Backing",me.backing||"nobody yet"],["You earned",(me.earned||0).toFixed(1)+" FLOP"],["Miners in town",AG.filter(x=>x.kind==="miner").length+[...remotes.values()].filter(r=>r.role==="miner").length]],tip:"Go to the Miner Farm and press the button to switch miners."},
-      auditor:{d:"You spot-check proofs at the Proof Lab. Catch fake work and the miner gets slashed.",s:()=>[["Jobs you checked",me.stats.a],["Cheats you caught",me.stats.b],["Not checked yet",Math.max(0,net.served-net.audited)]],tip:"Every served job can be checked. Bad proofs show up about 1 in 7 times."},
-      builder:{d:"You ship apps at the Gateway. Each app brings new paid jobs into the network.",s:()=>[["Apps you shipped",me.stats.a],["Jobs you created",me.stats.a*2],["Jobs waiting",net.queue.length]],tip:"More apps → more jobs → more work for miners and validators."}};
+      validator:{d:"You keep the ledger honest. Settle served sessions on chain at Validator Hall.",s:()=>[["Sessions you settled",me.stats.a],["Waiting to settle",net.unsettled],["Settled in town",net.settled]],tip:"Miners serve first, then you settle. Watch the 'waiting' number."},};
     function renderRolePanel(){const box=$("rolePanel");if(!box||!me)return;const R0=ROLES[me.role],U=ROLE_UI[me.role];box.style.setProperty("--rc",R0.col);box.innerHTML="";
       const hd=document.createElement("div");hd.className="rphead";const ic=document.createElement("span");ic.className="rpic";ic.textContent=R0.icon;const tx=document.createElement("div");
       const b=document.createElement("b");b.textContent=`${R0.name} dashboard`;const d=document.createElement("span");d.textContent=U.d;tx.append(b,d);hd.append(ic,tx);box.appendChild(hd);
@@ -1110,12 +1169,12 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       const tp=document.createElement("p");tp.className="rptip";tp.textContent="💡 "+U.tip;box.appendChild(tp);}
     // ---------- the CEO stands at Flop Labs HQ and reads the city rules out loud ----------
     const CEO_RULES=["Agents pay FLOP for compute. Miners earn FLOP by serving real inference.","Miners: calibrate your GPU before you serve a single job.","Every paid session is verified and settled by a validator.",
-      "Auditors check proofs. Fake work gets slashed.","Faucet Mart: one free claim per agent per day.","Never share your 24-word secret phrase. Not with anyone, not even me.",
+      "Validators check every proof. Fake work gets slashed.","Faucet Mart: one free claim per agent per day.","Never share your 24-word secret phrase. Not with anyone, not even me.",
       "Devnet and testnet FLOP have no value. Play for fun.","Be kind in chat. Swear words get filtered.","One wallet, one name. No duplicates.","Idle for 1 hour? You get swept out of the city.","Top 10 FLOP holders wear a crown. Go earn yours."];
-    const hq={x:-25,z:-14.5};
+    const hq={x:0,z:0};
     // clear the trees that hid the HQ, then build a raised round podium
     trees.forEach(t=>{if(Math.hypot(t.position.x-hq.x,t.position.z-hq.z)<7)scene.remove(t);});
-    const HQY=0.62;const hqDir=Math.atan2(-hq.x,-hq.z);
+    const HQY=0.62;const hqDir=0.55;
     const goldM=new THREE.MeshStandardMaterial({color:0xd9a441,metalness:.8,roughness:.25,envMap:envCube});const navyM=new THREE.MeshStandardMaterial({color:0x1b2440,roughness:.5});
     const tier1=new THREE.Mesh(new THREE.CylinderGeometry(2.9,3.1,0.32,48),M.white);tier1.position.set(hq.x,0.16,hq.z);tier1.castShadow=tier1.receiveShadow=true;scene.add(tier1);
     const tier2=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.3,0.3,48),navyM);tier2.position.set(hq.x,0.47,hq.z);tier2.castShadow=tier2.receiveShadow=true;scene.add(tier2);
@@ -1131,12 +1190,14 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
     const hqTex=mkTex(512,160,(g,w,h)=>{g.fillStyle="#0f1424";g.fillRect(0,0,w,h);g.fillStyle="#ffb070";g.font="700 64px sans-serif";g.textBaseline="middle";g.fillText("FLOP LABS",30,62);g.fillStyle="#9fb2ff";g.font="600 28px sans-serif";g.fillText("HQ · CITY RULES",32,122);});
     const hqSign=new THREE.Mesh(new THREE.PlaneGeometry(4.2,1.3),new THREE.MeshStandardMaterial({map:hqTex,emissive:0xffffff,emissiveMap:hqTex,emissiveIntensity:.4}));hqSign.position.set(hq.x-1.3,3.7,hq.z-2.7);scene.add(hqSign);
     [-2,2].forEach(k=>{const pst=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,4.4,8),M.steel);pst.position.set(hq.x-1.3+k*1.05,2.2,hq.z-2.75);scene.add(pst);});
-    const ceo=mkPerson("#d9a441",11,"ceo",{shirt:0x0b1022,skin:0x3a2116,hair:0x050505,pants:0x0b1022});ceo.g.position.set(hq.x,HQY-0.09,hq.z);ceo.g.rotation.y=Math.atan2(-hq.x,-hq.z);
+    const ceo=mkPerson("#d9a441",11,"ceo",{shirt:0x0b1022,skin:0x3a2116,hair:0x050505,pants:0x0b1022});ceo.g.position.set(hq.x,HQY-0.09,hq.z);ceo.g.rotation.y=hqDir;
     ceo.nameTag.classList.remove("player");ceo.nameTag.classList.add("ceo");ceo.nameTag.textContent="Arthur Hayes · CEO (NPC)";ceo.sayTag.classList.add("ceosay");
     ceo.g.scale.setScalar(2.2);
     const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.6,9,24,1,true),new THREE.MeshBasicMaterial({color:0xffc070,transparent:true,opacity:.05,side:THREE.DoubleSide,depthWrite:false}));beam.position.set(hq.x,4.9,hq.z);scene.add(beam);
     const halo2=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.05,8,40),glow(0xffb070));halo2.rotation.x=Math.PI/2;halo2.position.set(hq.x,HQY+0.02,hq.z);scene.add(halo2);anim.push(t=>{halo2.scale.setScalar(1+Math.sin(t*0.003)*0.08);});
-    $("ceo5").onclick=()=>{focusAt=new THREE.Vector3(hq.x,2.4,hq.z);focusUntil=Date.now()+9000;az=Math.atan2(-hq.x,-hq.z);el=0.38;dist=20;follow=false;if(me)$("follow5").textContent="Camera: whole town";lastInput=Date.now();lastAct=Date.now();};
+    $("sq5").onclick=()=>{lastInput=Date.now();if(me){const a=Math.random()*Math.PI*2,r=5+Math.random()*3;me.tx=clampX(Math.cos(a)*r);me.tz=clampZ(Math.sin(a)*r);follow=true;$("follow5").textContent="Camera: following you";lastAct=Date.now();}
+      else{focusAt=new THREE.Vector3(0,0,0);focusUntil=Date.now()+6000;dist=34;el=0.75;}};
+    $("ceo5").onclick=()=>{focusAt=new THREE.Vector3(hq.x,2.4,hq.z);focusUntil=Date.now()+9000;az=hqDir;el=0.38;dist=20;follow=false;if(me)$("follow5").textContent="Camera: whole town";lastInput=Date.now();lastAct=Date.now();};
     { // suit details, in the body's own coordinates (front = +z)
       const G=ceo.g,white=new THREE.MeshStandardMaterial({color:0xf7f8fb,roughness:.5}),lapel=new THREE.MeshStandardMaterial({color:0x121a30,roughness:.45}),
         tieM=new THREE.MeshStandardMaterial({color:0xb3202f,roughness:.4}),blk=new THREE.MeshStandardMaterial({color:0x111111,roughness:.3});
@@ -1152,7 +1213,7 @@ Reply as JSON {"go_to": a place name, "action_type": one allowed value, "action"
       const bridge=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.01,0.01),blk);bridge.position.set(0,1.615,0.24);G.add(bridge);
       ["la","ra"].forEach(k=>{const cuff=new THREE.Mesh(new THREE.CylinderGeometry(0.068,0.068,0.04,10),white);cuff.position.y=-0.49;ceo.limbs[k].add(cuff);});
       G.traverse(o=>{if(o.isMesh)o.castShadow=true;});}
-    const hqTag=document.createElement("div");hqTag.className="tag place";hqTag.style.setProperty("--c","#c4682b");hqTag.textContent="Flop Labs HQ";tags.appendChild(hqTag);const hqAnchor=new THREE.Vector3(hq.x-2.6,1.3,hq.z+1.9);
+    const hqTag=document.createElement("div");hqTag.className="tag place";hqTag.style.setProperty("--c","#c4682b");hqTag.textContent="Flop Labs HQ";tags.appendChild(hqTag);hqTag.hidden=true;const hqAnchor=new THREE.Vector3(hq.x-2.6,1.3,hq.z+1.9);
     let ceoIdx=0;function ceoSpeak(){ceo.line=`📜 Rule ${ceoIdx%CEO_RULES.length+1}: ${CEO_RULES[ceoIdx%CEO_RULES.length]}`;ceo.lineT=Date.now();ceo.sayTag.textContent=ceo.line;ceoIdx++;}
     ceoSpeak();const ceoTimer=setInterval(ceoSpeak,9000);unsubs.push(()=>clearInterval(ceoTimer));
     anim.push(t=>{ceo.limbs.ra.rotation.x=-0.6+Math.sin(t*0.004)*0.35;ceo.limbs.ra.rotation.z=-0.2;ceo.g.position.y=HQY-0.09;
